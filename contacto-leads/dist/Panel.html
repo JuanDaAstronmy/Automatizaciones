@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<style>
+  :root {
+    --azul: #037ef3; --azul-suave: #e6f2fe; --verde: #128c4b; --verde-wa: #25d366;
+    --fondo: #f4f7fb; --tarjeta: #fff; --texto: #111827; --suave: #6b7280; --borde: #e5e7eb; --rojo: #dc2626;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --fondo: #0b1220; --tarjeta: #111a2b; --texto: #e5e7eb; --suave: #9ca3af; --borde: #1f2a3d; --azul-suave: #0c2747; }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--fondo); color: var(--texto); font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  .top { position: sticky; top: 0; z-index: 5; background: var(--azul); color: #fff; padding: 10px 16px; display: flex; align-items: center; gap: 10px; }
+  .top b { font-size: 17px; flex: 1; }
+  .top select { background: rgba(255,255,255,.15); color: #fff; border: 1px solid rgba(255,255,255,.4); border-radius: 8px; padding: 6px 8px; max-width: 46vw; }
+  .top select option { color: #111; }
+  .top button { background: rgba(255,255,255,.15); border: 0; color: #fff; border-radius: 8px; padding: 6px 10px; cursor: pointer; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 12px 16px 90px; }
+  .aviso { background: #fff4ce; color: #7a5b00; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; font-size: 14px; }
+  .filtros { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+  .chip { flex: 0 0 auto; border: 1.5px solid var(--borde); background: var(--tarjeta); border-radius: 999px; padding: 6px 12px; cursor: pointer; white-space: nowrap; }
+  .chip.sel { border-color: var(--azul); background: var(--azul-suave); color: var(--azul); font-weight: 700; }
+  .barra { display: flex; gap: 8px; margin: 10px 0; align-items: center; }
+  .barra input[type=search] { flex: 1; min-width: 0; padding: 10px 12px; border: 1.5px solid var(--borde); border-radius: 10px; background: var(--tarjeta); }
+  .barra label { display: flex; gap: 6px; align-items: center; white-space: nowrap; font-size: 14px; color: var(--suave); }
+  .rapido { width: 100%; background: var(--verde-wa); color: #053d1f; border: 0; border-radius: 12px; padding: 13px; font-weight: 800; font-size: 16px; cursor: pointer; margin-bottom: 12px; }
+  .lista { display: grid; gap: 10px; }
+  .card { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 14px; padding: 12px 14px; }
+  .fila1 { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+  .nombre { font-weight: 700; font-size: 16px; }
+  .badge { font-size: 12px; padding: 3px 8px; border-radius: 999px; white-space: nowrap; color: #1f2937; }
+  .sub { color: var(--suave); font-size: 13px; margin-top: 2px; }
+  .acciones { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: 10px; padding: 9px 12px; cursor: pointer; text-decoration: none; font-weight: 700; font-size: 14px; }
+  .wa { background: var(--verde-wa); color: #053d1f; }
+  .sec { background: var(--azul-suave); color: var(--azul); }
+  .gris { background: transparent; border: 1.5px solid var(--borde); color: var(--texto); }
+  .crece { flex: 1; }
+  .vacio { text-align: center; color: var(--suave); padding: 40px 0; }
+  .fab { position: fixed; right: 18px; bottom: 18px; width: 56px; height: 56px; border-radius: 50%; background: var(--azul); color: #fff; border: 0; font-size: 28px; box-shadow: 0 6px 16px rgba(3,126,243,.4); cursor: pointer; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 10; display: flex; align-items: flex-end; justify-content: center; }
+  .hoja { background: var(--tarjeta); width: 100%; max-width: 640px; max-height: 92vh; overflow-y: auto; border-radius: 18px 18px 0 0; padding: 18px 16px 28px; }
+  @media (min-width: 700px) { .modal { align-items: center; } .hoja { border-radius: 18px; } }
+  .hoja h2 { margin: 0 0 2px; font-size: 20px; }
+  .seccion { font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: var(--suave); font-weight: 800; margin: 18px 0 8px; }
+  .msg { display: block; border: 1.5px solid var(--borde); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; text-decoration: none; color: var(--texto); }
+  .msg b { display: block; margin-bottom: 2px; }
+  .msg span { color: var(--suave); font-size: 13px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .estados { display: flex; flex-wrap: wrap; gap: 6px; }
+  textarea, .campo { width: 100%; border: 1.5px solid var(--borde); border-radius: 10px; padding: 10px; background: var(--tarjeta); }
+  textarea { min-height: 80px; resize: vertical; }
+  .campo { margin-bottom: 10px; }
+  .previa { white-space: pre-wrap; background: var(--fondo); border-radius: 12px; padding: 12px; font-size: 14px; margin: 12px 0; max-height: 36vh; overflow-y: auto; }
+  .grande { font-size: 22px; font-weight: 800; margin: 4px 0; }
+  .toast { position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%); background: #111827; color: #fff; padding: 10px 16px; border-radius: 999px; z-index: 20; font-size: 14px; max-width: 90vw; }
+  .oculto { display: none !important; }
+  .cargando { text-align: center; color: var(--suave); padding: 60px 0; }
+</style>
+</head>
+<body>
+<div class="top">
+  <b id="titulo">Panel</b>
+  <select id="quien" title="¿Quién eres?"></select>
+  <button id="recargar" title="Actualizar">↻</button>
+</div>
+<div class="wrap" id="app"><div class="cargando">Cargando contactos…</div></div>
+<button class="fab oculto" id="fab" title="Agregar contacto">+</button>
+<div id="capa"></div>
+
+<script>
+  var COLORES = { 'Pendiente': '#fff4ce', 'Contactado': '#dbeafe', 'Respondió': '#ede9fe', 'Agendado': '#d1fae5', 'Asistió': '#a7f3d0', 'No asistió': '#fde2e1', 'No interesado': '#e5e7eb', 'Número inválido': '#fecaca' };
+  var FILTROS = [
+    { k: 'pend', t: 'Por contactar', e: ['Pendiente'] },
+    { k: 'cont', t: 'Contactados', e: ['Contactado'] },
+    { k: 'resp', t: 'Respondieron', e: ['Respondió'] },
+    { k: 'agen', t: 'Agendados', e: ['Agendado'] },
+    { k: 'otros', t: 'Cerrados', e: ['Asistió', 'No asistió', 'No interesado', 'Número inválido'] },
+    { k: 'todos', t: 'Todos', e: null }
+  ];
+  var S = { clave: '', d: null, filtro: 'pend', q: '', mios: false, quien: '', cargadoEn: 0, rapido: null };
+
+  function guardar(k, v) { try { localStorage.setItem('aiesec_' + k, v); } catch (e) {} }
+  function leer(k) { try { return localStorage.getItem('aiesec_' + k); } catch (e) { return null; } }
+
+  function el(tag, props) {
+    var n = document.createElement(tag);
+    props = props || {};
+    Object.keys(props).forEach(function (k) {
+      var v = props[k];
+      if (v === undefined || v === null) return;
+      if (k === 'texto') n.textContent = v;
+      else if (k === 'clase') n.className = v;
+      else if (k === 'estilo') n.setAttribute('style', v);
+      else if (k.indexOf('on') === 0) n.addEventListener(k.slice(2), v);
+      else n.setAttribute(k, v);
+    });
+    for (var i = 2; i < arguments.length; i++) {
+      var c = arguments[i];
+      if (c === null || c === undefined || c === false) continue;
+      n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+    }
+    return n;
+  }
+  function toast(t) {
+    var n = el('div', { clase: 'toast', texto: t });
+    document.body.appendChild(n);
+    setTimeout(function () { n.remove(); }, 2600);
+  }
+  function err(e) { toast('⚠️ ' + (e && e.message ? e.message : e).toString().replace(/^Exception:\s*/, '')); }
+  function run() { return google.script.run.withFailureHandler(err); }
+
+  function render(texto, c) {
+    var v = Object.assign({}, c.vars, { remitente: S.quien });
+    return String(texto || '').replace(/\{([a-z_]+)\}/gi, function (m, k) {
+      k = k.toLowerCase();
+      return Object.prototype.hasOwnProperty.call(v, k) ? (v[k] == null ? '' : String(v[k])) : m;
+    }).trim();
+  }
+  function wa(c, texto) { return 'https://wa.me/' + c.telefono + (texto ? '?text=' + encodeURIComponent(texto) : ''); }
+  function msg(clave) { return (S.d.mensajes || []).filter(function (m) { return m.clave === clave; })[0]; }
+  function respuestas() { return (S.d.mensajes || []).filter(function (m) { return m.clave.indexOf('RESP_') === 0; }); }
+
+  /* ------------------------------ Datos ------------------------------ */
+  function cargar(silencioso) {
+    if (!silencioso) document.getElementById('app').innerHTML = '<div class="cargando">Cargando contactos…</div>';
+    run().withSuccessHandler(function (d) {
+      S.d = d; S.cargadoEn = Date.now();
+      document.getElementById('titulo').textContent = d.org + ' · Panel';
+      pintarQuien();
+      document.getElementById('fab').classList.remove('oculto');
+      pintar();
+    }).panelDatos(S.clave);
+  }
+  function reemplazar(c) {
+    var i = S.d.contactos.findIndex(function (x) { return x.id === c.id; });
+    if (i >= 0) S.d.contactos[i] = c; else S.d.contactos.unshift(c);
+  }
+
+  function pintarQuien() {
+    var sel = document.getElementById('quien');
+    sel.innerHTML = '';
+    sel.appendChild(el('option', { value: '', texto: '¿Quién eres?' }));
+    var nombres = S.d.equipo.slice();
+    if (S.quien && nombres.indexOf(S.quien) < 0) nombres.push(S.quien);
+    nombres.forEach(function (n) { sel.appendChild(el('option', { value: n, texto: n })); });
+    sel.appendChild(el('option', { value: '__otro', texto: 'Otro nombre…' }));
+    sel.value = S.quien || '';
+  }
+  document.getElementById('quien').addEventListener('change', function (e) {
+    var v = e.target.value;
+    if (v === '__otro') { v = (prompt('¿Cómo te llamas? (sale en {remitente})') || '').trim(); }
+    S.quien = v; guardar('quien', v); pintarQuien(); pintar();
+  });
+  document.getElementById('recargar').addEventListener('click', function () { cargar(); });
+  document.getElementById('fab').addEventListener('click', nuevoContacto);
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden && S.d && !S.rapido && !document.querySelector('.modal') && Date.now() - S.cargadoEn > 60000) cargar(true);
+  });
+
+  function necesitaQuien(ev) {
+    if (S.quien) return false;
+    if (ev) ev.preventDefault();
+    toast('Primero elige arriba "¿Quién eres?"');
+    document.getElementById('quien').focus();
+    return true;
+  }
+
+  /* Registra el envío en la hoja (el WhatsApp ya se abrió con el enlace). */
+  function registrar(c, clave) {
+    run().withSuccessHandler(function (nuevo) { reemplazar(nuevo); if (!S.rapido && !document.querySelector('.modal')) pintar(); })
+      .panelRegistrarEnvio(S.clave, c.id, clave, S.quien);
+  }
+
+  /* ------------------------------ Lista ------------------------------ */
+  function filtrados() {
+    var f = FILTROS.filter(function (x) { return x.k === S.filtro; })[0];
+    var q = S.q.toLowerCase();
+    var qd = q.replace(/\D/g, '');
+    var lista = S.d.contactos.filter(function (c) {
+      if (f.e && f.e.indexOf(c.estado) < 0) return false;
+      if (S.mios && c.responsable && c.responsable !== S.quien) return false;
+      if (q && c.nombre.toLowerCase().indexOf(q) < 0 && !(qd && c.telefono.indexOf(qd) >= 0) && c.correo.toLowerCase().indexOf(q) < 0) return false;
+      return true;
+    });
+    var orden = {
+      pend: function (a, b) { return (a.creado || 0) - (b.creado || 0); },
+      cont: function (a, b) { return (a.ultimoContacto || 0) - (b.ultimoContacto || 0); },
+      agen: function (a, b) { return (a.fechaReunion || 0) - (b.fechaReunion || 0); }
+    }[S.filtro] || function (a, b) { return a.nombre.localeCompare(b.nombre); };
+    return lista.sort(orden);
+  }
+  function pendientesRapido() {
+    return S.d.contactos.filter(function (c) { return c.estado === 'Pendiente' && c.valido && (!c.responsable || c.responsable === S.quien); })
+      .sort(function (a, b) { return (a.creado || 0) - (b.creado || 0); });
+  }
+
+  function pintar() {
+    var app = document.getElementById('app');
+    app.innerHTML = '';
+    if (S.d.sinUrl) app.appendChild(el('div', { clase: 'aviso', texto: '⚠️ Falta pegar la URL de la app web en la pestaña Config: los mensajes saldrían sin el link para agendar.' }));
+    if (S.d.modo === 'API') app.appendChild(el('div', { clase: 'aviso', texto: '🤖 Modo API activo: las invitaciones se envían solas. Usa este panel para seguimientos y respuestas.' }));
+    var cuentas = {};
+    S.d.contactos.forEach(function (c) { FILTROS.forEach(function (f) { if (!f.e || f.e.indexOf(c.estado) >= 0) cuentas[f.k] = (cuentas[f.k] || 0) + 1; }); });
+    var filtros = el('div', { clase: 'filtros' });
+    FILTROS.forEach(function (f) {
+      filtros.appendChild(el('button', { clase: 'chip' + (S.filtro === f.k ? ' sel' : ''), texto: f.t + ' · ' + (cuentas[f.k] || 0), onclick: function () { S.filtro = f.k; guardar('filtro', f.k); pintar(); } }));
+    });
+    app.appendChild(filtros);
+    var buscar = el('input', { type: 'search', placeholder: 'Buscar nombre o número', value: S.q });
+    buscar.addEventListener('input', function () { S.q = buscar.value; pintarLista(); });
+    var mios = el('input', { type: 'checkbox' });
+    mios.checked = S.mios;
+    mios.addEventListener('change', function () { S.mios = mios.checked; guardar('mios', S.mios ? '1' : ''); pintarLista(); });
+    app.appendChild(el('div', { clase: 'barra' }, buscar, el('label', {}, mios, 'Solo míos')));
+    var nRapido = pendientesRapido().length;
+    if (nRapido && S.d.modo !== 'API') app.appendChild(el('button', { clase: 'rapido', texto: '⚡ Modo rápido · ' + nRapido + ' por contactar', onclick: iniciarRapido }));
+    app.appendChild(el('div', { clase: 'lista', id: 'lista' }));
+    pintarLista();
+  }
+
+  function pintarLista() {
+    var lista = document.getElementById('lista');
+    if (!lista) return;
+    lista.innerHTML = '';
+    var cs = filtrados();
+    if (!cs.length) { lista.appendChild(el('div', { clase: 'vacio', texto: 'No hay contactos aquí 🎉' })); return; }
+    cs.slice(0, 300).forEach(function (c) { lista.appendChild(tarjeta(c)); });
+    if (cs.length > 300) lista.appendChild(el('div', { clase: 'vacio', texto: 'Mostrando 300 de ' + cs.length + '. Usa el buscador.' }));
+  }
+
+  function botonWa(c, clave, etiqueta, clase) {
+    var m = msg(clave);
+    var texto = m ? render(m.texto, c) : '';
+    return el('a', { clase: 'btn wa ' + (clase || ''), href: wa(c, texto), target: '_blank', rel: 'noopener', texto: etiqueta,
+      onclick: function (ev) { if (necesitaQuien(ev)) return; registrar(c, clave); } });
+  }
+
+  function tarjeta(c) {
+    var meta = [];
+    if (c.estado === 'Agendado' && c.fechaReunionTexto) meta.push('🗓️ ' + c.fechaReunionTexto);
+    if (c.intentos) meta.push(c.intentos + (c.intentos === 1 ? ' mensaje' : ' mensajes'));
+    if (c.ultimoContactoTexto) meta.push(c.ultimoContactoTexto);
+    if (c.responsable) meta.push('👤 ' + c.responsable);
+    var acciones = el('div', { clase: 'acciones' });
+    if (!c.valido) acciones.appendChild(el('span', { clase: 'sub', texto: 'Número por revisar: corrígelo en la hoja.' }));
+    else if (c.estado === 'Pendiente') acciones.appendChild(botonWa(c, 'PRIMER_CONTACTO', '📲 Enviar 1er mensaje', 'crece'));
+    else if (c.estado === 'Contactado') acciones.appendChild(botonWa(c, 'SEGUIMIENTO', '🔁 Seguimiento', 'crece'));
+    else if (c.estado === 'Respondió') acciones.appendChild(el('button', { clase: 'btn wa crece', texto: '💬 Responder', onclick: function () { detalle(c, true); } }));
+    else if (c.estado === 'Agendado') {
+      acciones.appendChild(botonWa(c, 'RECORDATORIO', '⏰ Recordatorio', 'crece'));
+      if (c.linkReunion) acciones.appendChild(el('a', { clase: 'btn sec', href: c.linkReunion, target: '_blank', rel: 'noopener', texto: '🎥 Meet' }));
+    } else acciones.appendChild(el('a', { clase: 'btn gris crece', href: wa(c, ''), target: '_blank', rel: 'noopener', texto: 'Abrir chat' }));
+    acciones.appendChild(el('button', { clase: 'btn gris', texto: '⋯ Más', onclick: function () { detalle(c, false); } }));
+    return el('div', { clase: 'card' },
+      el('div', { clase: 'fila1' }, el('div', { clase: 'nombre', texto: c.nombre || '(sin nombre)' }), el('span', { clase: 'badge', estilo: 'background:' + (COLORES[c.estado] || '#eee'), texto: c.estado })),
+      el('div', { clase: 'sub', texto: c.telefonoTexto + (c.origen ? ' · ' + c.origen : '') }),
+      meta.length ? el('div', { clase: 'sub', texto: meta.join(' · ') }) : null,
+      acciones);
+  }
+
+  /* ------------------------------ Modales ------------------------------ */
+  function abrirModal(contenido) {
+    cerrarModal();
+    var m = el('div', { clase: 'modal', onclick: function (e) { if (e.target === m) cerrarModal(); } }, el('div', { clase: 'hoja' }, contenido));
+    document.getElementById('capa').appendChild(m);
+  }
+  function cerrarModal() { document.getElementById('capa').innerHTML = ''; }
+
+  function detalle(c, enfocarRespuestas) {
+    var cont = el('div', {});
+    cont.appendChild(el('h2', { texto: c.nombre || '(sin nombre)' }));
+    cont.appendChild(el('div', { clase: 'sub', texto: c.telefonoTexto + (c.correo ? ' · ' + c.correo : '') }));
+    if (c.fechaReunionTexto && c.estado === 'Agendado') cont.appendChild(el('div', { clase: 'sub', texto: '🗓️ ' + c.fechaReunionTexto }));
+
+    if (c.valido) {
+      var resp = respuestas();
+      cont.appendChild(el('div', { clase: 'seccion', texto: resp.length ? 'Respuestas rápidas' : 'Mensajes' }));
+      var cajaResp = el('div', {});
+      resp.forEach(function (m) { cajaResp.appendChild(itemMensaje(c, m)); });
+      cont.appendChild(cajaResp);
+      cont.appendChild(el('div', { clase: 'seccion', texto: 'Otros mensajes' }));
+      (S.d.mensajes || []).filter(function (m) { return m.clave.indexOf('RESP_') !== 0 && (m.clave !== 'RECORDATORIO' || c.fechaReunion); }).forEach(function (m) { cont.appendChild(itemMensaje(c, m)); });
+      cont.appendChild(el('a', { clase: 'msg', href: wa(c, ''), target: '_blank', rel: 'noopener' }, el('b', { texto: 'Abrir chat vacío' })));
+    }
+
+    cont.appendChild(el('div', { clase: 'seccion', texto: 'Estado' }));
+    var est = el('div', { clase: 'estados' });
+    S.d.estados.forEach(function (e) {
+      est.appendChild(el('button', { clase: 'chip' + (c.estado === e ? ' sel' : ''), texto: e, onclick: function () {
+        if (e === c.estado) return;
+        if (c.estado === 'Agendado' && !confirm('Esto NO borra la reunión del calendario. ¿Cambiar el estado igual?')) return;
+        run().withSuccessHandler(function (n) { reemplazar(n); cerrarModal(); pintar(); toast('Estado: ' + e); }).panelCambiarEstado(S.clave, c.id, e, S.quien);
+      } }));
+    });
+    cont.appendChild(est);
+
+    cont.appendChild(el('div', { clase: 'seccion', texto: 'Notas' }));
+    var nota = el('textarea', { placeholder: 'Ej.: le interesa voluntariado en Brasil; escribir el viernes' });
+    nota.value = c.notas || '';
+    cont.appendChild(nota);
+    cont.appendChild(el('div', { clase: 'acciones' },
+      el('button', { clase: 'btn sec', texto: 'Guardar nota', onclick: function () {
+        run().withSuccessHandler(function (n) { reemplazar(n); toast('Nota guardada'); }).panelGuardarNota(S.clave, c.id, nota.value, S.quien);
+      } }),
+      S.quien && c.responsable !== S.quien ? el('button', { clase: 'btn gris', texto: 'Asignármelo', onclick: function () {
+        run().withSuccessHandler(function (n) { reemplazar(n); cerrarModal(); pintar(); toast('Ahora es tuyo'); }).panelAsignar(S.clave, c.id, S.quien);
+      } }) : null));
+
+    if (c.link) {
+      cont.appendChild(el('div', { clase: 'seccion', texto: 'Link personal para agendar' }));
+      var campo = el('input', { clase: 'campo', readonly: 'readonly', value: c.link });
+      campo.addEventListener('focus', function () { campo.select(); });
+      cont.appendChild(campo);
+      cont.appendChild(el('button', { clase: 'btn gris', texto: 'Copiar link', onclick: function () { copiar(campo); } }));
+    }
+    cont.appendChild(el('div', { clase: 'acciones' }, el('button', { clase: 'btn gris crece', texto: 'Cerrar', onclick: cerrarModal })));
+    abrirModal(cont);
+    if (enfocarRespuestas) toast('Toca una respuesta: se abre WhatsApp con el texto listo');
+  }
+
+  function itemMensaje(c, m) {
+    var texto = render(m.texto, c);
+    return el('a', { clase: 'msg', href: wa(c, texto), target: '_blank', rel: 'noopener',
+      onclick: function (ev) { if (necesitaQuien(ev)) return; registrar(c, m.clave); } },
+      el('b', { texto: m.nombre || m.clave }), el('span', { texto: texto }));
+  }
+
+  function copiar(input) {
+    input.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    if (!ok && navigator.clipboard) { navigator.clipboard.writeText(input.value).then(function () { toast('Copiado'); }, function () { toast('Mantén presionado el link para copiarlo'); }); return; }
+    toast(ok ? 'Copiado' : 'Mantén presionado el link para copiarlo');
+  }
+
+  function nuevoContacto() {
+    var n = el('input', { clase: 'campo', placeholder: 'Nombre' });
+    var t = el('input', { clase: 'campo', type: 'tel', placeholder: 'WhatsApp (ej. 300 123 4567)' });
+    var co = el('input', { clase: 'campo', type: 'email', placeholder: 'Correo (opcional)' });
+    var b = el('button', { clase: 'btn wa crece', texto: 'Agregar' });
+    b.addEventListener('click', function () {
+      b.disabled = true;
+      google.script.run.withSuccessHandler(function (c) { reemplazar(c); cerrarModal(); S.filtro = 'pend'; pintar(); toast('Agregado'); })
+        .withFailureHandler(function (e) { b.disabled = false; err(e); })
+        .panelNuevoContacto(S.clave, { nombre: n.value, telefono: t.value, correo: co.value }, S.quien);
+    });
+    abrirModal(el('div', {}, el('h2', { texto: 'Nuevo contacto' }), el('div', { clase: 'seccion', texto: 'Datos' }), n, t, co,
+      el('div', { clase: 'acciones' }, b, el('button', { clase: 'btn gris', texto: 'Cancelar', onclick: cerrarModal }))));
+  }
+
+  /* ------------------------------ Modo rápido ------------------------------ */
+  function iniciarRapido() {
+    if (necesitaQuien()) return;
+    S.rapido = { cola: pendientesRapido().map(function (c) { return c.id; }), i: 0, enviados: 0 };
+    siguienteRapido();
+  }
+  function liberar(id) {
+    if (!id) return;
+    google.script.run.withSuccessHandler(function (n) { if (n) reemplazar(n); }).panelLiberar(S.clave, id, S.quien);
+  }
+  function salirRapido() {
+    var R = S.rapido;
+    if (R && R.actual && !R.enviado) liberar(R.actual);
+    S.rapido = null; cerrarModal(); pintar();
+  }
+
+  function siguienteRapido() {
+    var R = S.rapido;
+    if (!R) return;
+    var c = null;
+    while (R.i < R.cola.length) {
+      c = S.d.contactos.filter(function (x) { return x.id === R.cola[R.i]; })[0];
+      if (c && c.estado === 'Pendiente') break;
+      R.i++; c = null;
+    }
+    if (!c) {
+      abrirModal(el('div', { estilo: 'text-align:center' }, el('div', { clase: 'grande', texto: '🎉 ¡Terminaste!' }),
+        el('p', { texto: 'Enviaste ' + R.enviados + ' mensajes. Los resúmenes de las 12:00 y 20:00 te dirán quién agendó.' }),
+        el('button', { clase: 'btn sec', texto: 'Volver', onclick: salirRapido })));
+      return;
+    }
+    R.actual = c.id; R.enviado = false;
+    var m = msg('PRIMER_CONTACTO');
+    var texto = m ? render(m.texto, c) : '';
+    var enviar = el('a', { clase: 'btn wa', estilo: 'width:100%;padding:16px;font-size:17px;opacity:.5;pointer-events:none', href: wa(c, texto), target: '_blank', rel: 'noopener', texto: 'Reservando contacto…' });
+    enviar.addEventListener('click', function () {
+      R.enviados++; R.enviado = true;
+      registrar(c, 'PRIMER_CONTACTO');
+      c.estado = 'Contactado';
+      setTimeout(function () { R.i++; siguienteRapido(); }, 700);
+    });
+    abrirModal(el('div', {},
+      el('div', { clase: 'sub', texto: 'Modo rápido · ' + (R.i + 1) + ' de ' + R.cola.length + ' · enviados: ' + R.enviados }),
+      el('div', { clase: 'grande', texto: c.nombre || '(sin nombre)' }),
+      el('div', { clase: 'sub', texto: c.telefonoTexto + (c.origen ? ' · ' + c.origen : '') }),
+      el('div', { clase: 'previa', texto: texto || '⚠️ No hay mensaje PRIMER_CONTACTO en la pestaña Mensajes.' }),
+      enviar,
+      el('div', { clase: 'acciones' },
+        el('button', { clase: 'btn gris crece', texto: 'Saltar', onclick: function () { liberar(c.id); R.i++; siguienteRapido(); } }),
+        el('button', { clase: 'btn gris', texto: 'Número malo', onclick: function () {
+          run().withSuccessHandler(function (n) { reemplazar(n); }).panelCambiarEstado(S.clave, c.id, 'Número inválido', S.quien);
+          R.i++; siguienteRapido();
+        } }),
+        el('button', { clase: 'btn gris', texto: 'Salir', onclick: salirRapido }))));
+    // Reserva el contacto para que dos personas del equipo no le escriban al mismo tiempo.
+    google.script.run.withSuccessHandler(function (r) {
+      if (S.rapido !== R || R.cola[R.i] !== c.id) return;
+      if (!r.ok) { toast('Ya lo está contactando ' + (r.responsable || 'otra persona') + ', sigo con el siguiente'); if (r.contacto) reemplazar(r.contacto); R.i++; siguienteRapido(); return; }
+      reemplazar(r.contacto);
+      enviar.textContent = '📲 Abrir WhatsApp y enviar';
+      enviar.style.opacity = '1'; enviar.style.pointerEvents = 'auto';
+    }).withFailureHandler(function (e) {
+      err(e);
+      enviar.textContent = '📲 Abrir WhatsApp y enviar';
+      enviar.style.opacity = '1'; enviar.style.pointerEvents = 'auto';
+    }).panelReclamar(S.clave, c.id, S.quien);
+  }
+
+  /* ------------------------------ Inicio ------------------------------ */
+  S.quien = leer('quien') || '';
+  S.filtro = leer('filtro') || 'pend';
+  S.mios = leer('mios') === '1';
+  google.script.url.getLocation(function (loc) {
+    S.clave = String((loc.parameter && loc.parameter.clave) || '');
+    if (!S.clave) { document.getElementById('app').innerHTML = '<div class="cargando">Falta la clave del panel en el link.</div>'; return; }
+    cargar();
+  });
+</script>
+</body>
+</html>

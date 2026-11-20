@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<style>
+  :root {
+    --azul: #037ef3; --azul-osc: #0262bd; --azul-suave: #e6f2fe;
+    --fondo: #f4f7fb; --tarjeta: #ffffff; --texto: #111827; --suave: #6b7280; --borde: #e5e7eb;
+    --verde: #12a150; --rojo: #dc2626;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --fondo: #0b1220; --tarjeta: #111a2b; --texto: #e5e7eb; --suave: #9ca3af; --borde: #1f2a3d; --azul-suave: #0c2747; }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--fondo); color: var(--texto); font: 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 16px 16px 40px; }
+  .card { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 16px; padding: 20px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+  .pill { display: inline-block; background: var(--azul); color: #fff; font-weight: 700; letter-spacing: .5px; font-size: 13px; padding: 4px 10px; border-radius: 999px; }
+  h1 { font-size: 24px; line-height: 1.2; margin: 12px 0 6px; }
+  .desc { color: var(--suave); margin: 0 0 10px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--suave); font-size: 14px; }
+  .hola { margin: 18px 0 4px; font-size: 18px; font-weight: 600; }
+  .paso { font-size: 13px; text-transform: uppercase; letter-spacing: .6px; color: var(--suave); font-weight: 700; margin: 22px 0 10px; }
+  .dias { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+  .dia { flex: 0 0 auto; scroll-snap-align: start; border: 1.5px solid var(--borde); background: var(--tarjeta); color: var(--texto); border-radius: 12px; padding: 10px 14px; text-align: center; cursor: pointer; min-width: 74px; font: inherit; }
+  .dia b { display: block; font-size: 20px; }
+  .dia small { color: var(--suave); text-transform: capitalize; }
+  .dia.sel { border-color: var(--azul); background: var(--azul-suave); }
+  .horas { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
+  .hora { border: 1.5px solid var(--azul); color: var(--azul); background: transparent; border-radius: 10px; padding: 11px 6px; font: inherit; font-weight: 600; cursor: pointer; }
+  .hora.sel { background: var(--azul); color: #fff; }
+  label { display: block; font-size: 14px; font-weight: 600; margin: 14px 0 6px; }
+  input { width: 100%; padding: 12px; border: 1.5px solid var(--borde); border-radius: 10px; font: inherit; background: var(--tarjeta); color: var(--texto); }
+  input:focus { outline: none; border-color: var(--azul); }
+  .ayuda { font-size: 13px; color: var(--suave); margin-top: 4px; }
+  .btn { display: block; width: 100%; text-align: center; border: 0; border-radius: 12px; padding: 14px; font: inherit; font-weight: 700; cursor: pointer; text-decoration: none; margin-top: 12px; }
+  .btn-p { background: var(--azul); color: #fff; }
+  .btn-p:disabled { opacity: .6; cursor: wait; }
+  .btn-s { background: var(--azul-suave); color: var(--azul); }
+  .btn-t { background: transparent; color: var(--suave); text-decoration: underline; font-weight: 500; }
+  .resumen { background: var(--azul-suave); border-radius: 12px; padding: 12px 14px; margin-top: 18px; font-weight: 600; }
+  .ok { text-align: center; }
+  .ok .icono { width: 64px; height: 64px; border-radius: 50%; background: var(--verde); color: #fff; font-size: 34px; line-height: 64px; margin: 6px auto 12px; }
+  .error { color: var(--rojo); font-weight: 600; margin-top: 12px; }
+  .vacio { color: var(--suave); padding: 12px 0; }
+  .cargando { text-align: center; color: var(--suave); padding: 50px 0; }
+  .spin { width: 34px; height: 34px; border: 3px solid var(--borde); border-top-color: var(--azul); border-radius: 50%; margin: 0 auto 12px; animation: g 0.8s linear infinite; }
+  @keyframes g { to { transform: rotate(360deg); } }
+  .oculto { display: none !important; }
+  .pie { text-align: center; color: var(--suave); font-size: 12px; margin-top: 18px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card" id="app">
+    <div class="cargando"><div class="spin"></div>Cargando horarios…</div>
+  </div>
+  <div class="pie">Hora de Colombia · Reunión por Google Meet</div>
+</div>
+
+<script>
+  var S = { id: '', d: null, dia: 0, slot: null, cambiando: false };
+
+  function el(tag, props) {
+    var n = document.createElement(tag);
+    props = props || {};
+    Object.keys(props).forEach(function (k) {
+      if (k === 'texto') n.textContent = props[k];
+      else if (k === 'clase') n.className = props[k];
+      else if (k.indexOf('on') === 0) n.addEventListener(k.slice(2), props[k]);
+      else n.setAttribute(k, props[k]);
+    });
+    for (var i = 2; i < arguments.length; i++) {
+      var c = arguments[i];
+      if (c === null || c === undefined || c === false) continue;
+      n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+    }
+    return n;
+  }
+  function app() { return document.getElementById('app'); }
+  function pintar(nodo) { var a = app(); a.innerHTML = ''; a.appendChild(nodo); window.scrollTo(0, 0); }
+  function cargando(txt) { pintar(el('div', { clase: 'cargando' }, el('div', { clase: 'spin' }), txt || 'Cargando…')); }
+  function mensajeError(e) { return (e && e.message ? e.message : String(e)).replace(/^Exception:\s*/, ''); }
+
+  function errorTotal(msg) {
+    pintar(el('div', {}, el('span', { clase: 'pill', texto: 'AIESEC' }), el('h1', { texto: 'Ups…' }), el('p', { clase: 'desc', texto: msg }),
+      el('button', { clase: 'btn btn-s', texto: 'Intentar de nuevo', onclick: cargar })));
+  }
+
+  function cargar() {
+    cargando('Cargando horarios…');
+    google.script.run.withSuccessHandler(function (d) {
+      if (d.error) return errorTotal(d.error);
+      S.d = d; S.dia = 0; S.slot = null;
+      if (d.contacto && d.contacto.reserva && !S.cambiando) vistaReserva(); else vistaElegir();
+    }).withFailureHandler(function (e) { errorTotal(mensajeError(e)); }).agendaDatos(S.id);
+  }
+
+  function encabezado() {
+    var d = S.d;
+    return el('div', {},
+      el('span', { clase: 'pill', texto: d.org }),
+      el('h1', { texto: d.titulo }),
+      el('p', { clase: 'desc', texto: d.descripcion }),
+      el('div', { clase: 'meta' }, el('span', { texto: '⏱️ ' + d.duracion + ' min' }), el('span', { texto: '🎥 Google Meet' }), el('span', { texto: '🇨🇴 Hora de Colombia' })));
+  }
+
+  function vistaReserva() {
+    var r = S.d.contacto.reserva;
+    pintar(el('div', {}, encabezado(),
+      el('p', { clase: 'hola', texto: 'Hola, ' + S.d.contacto.primerNombre + ' 👋' }),
+      el('p', { texto: 'Ya tienes una reunión agendada:' }),
+      el('div', { clase: 'resumen', texto: '🗓️ ' + r.dia + ' · ' + r.hora }),
+      r.meet ? el('a', { clase: 'btn btn-p', href: r.meet, target: '_blank', rel: 'noopener', texto: 'Abrir Google Meet' }) : null,
+      el('button', { clase: 'btn btn-s', texto: 'Cambiar de horario', onclick: function () { S.cambiando = true; vistaElegir(); } }),
+      el('button', { clase: 'btn btn-t', texto: 'Cancelar la reunión', onclick: cancelar })));
+  }
+
+  function cancelar() {
+    if (!confirm('¿Seguro que quieres cancelar tu reunión?')) return;
+    cargando('Cancelando…');
+    google.script.run.withSuccessHandler(function () {
+      S.cambiando = true; cargar();
+    }).withFailureHandler(function (e) { errorTotal(mensajeError(e)); }).agendaCancelar(S.id);
+  }
+
+  function vistaElegir(aviso) {
+    var d = S.d;
+    var cont = el('div', {}, encabezado());
+    if (d.contacto) cont.appendChild(el('p', { clase: 'hola', texto: 'Hola, ' + (d.contacto.primerNombre || '') + ' 👋' }));
+    if (aviso) cont.appendChild(el('p', { clase: 'error', texto: aviso }));
+    if (!d.dias.length) {
+      cont.appendChild(el('p', { clase: 'vacio', texto: 'Por ahora no hay horarios disponibles 😕 Escríbenos por WhatsApp y te ayudamos a encontrar un espacio.' }));
+      return pintar(cont);
+    }
+    cont.appendChild(el('div', { clase: 'paso', texto: '1 · Elige el día' }));
+    var dias = el('div', { clase: 'dias' });
+    d.dias.forEach(function (dia, i) {
+      var partes = dia.etiqueta.split(' ');
+      dias.appendChild(el('button', { clase: 'dia' + (i === S.dia ? ' sel' : ''), onclick: function () { S.dia = i; S.slot = null; vistaElegir(); } },
+        el('small', { texto: partes[0] }), el('b', { texto: partes[1] }), el('small', { texto: partes[2] })));
+    });
+    cont.appendChild(dias);
+    var diaSel = d.dias[S.dia];
+    cont.appendChild(el('div', { clase: 'paso', texto: '2 · Elige la hora · ' + diaSel.etiquetaLarga }));
+    var horas = el('div', { clase: 'horas' });
+    diaSel.horarios.forEach(function (h) {
+      horas.appendChild(el('button', { clase: 'hora' + (S.slot && S.slot.inicio === h.inicio ? ' sel' : ''), texto: h.etiqueta, onclick: function () { S.slot = h; vistaElegir(); setTimeout(function () { var f = document.getElementById('form'); if (f) f.scrollIntoView({ behavior: 'smooth' }); }, 50); } }));
+    });
+    cont.appendChild(horas);
+    if (S.slot) cont.appendChild(formulario(diaSel));
+    pintar(cont);
+    var sel = document.querySelector('.dia.sel'); if (sel && sel.scrollIntoView) sel.scrollIntoView({ inline: 'center', block: 'nearest' });
+  }
+
+  function formulario(diaSel) {
+    var c = S.d.contacto || {};
+    var nombre = el('input', { id: 'nombre', autocomplete: 'name', placeholder: 'Tu nombre completo' });
+    nombre.value = c.nombre || '';
+    var correo = el('input', { id: 'correo', type: 'email', autocomplete: 'email', placeholder: 'tucorreo@gmail.com' });
+    correo.value = c.correo || '';
+    var tel = S.d.pideTelefono ? el('input', { id: 'tel', type: 'tel', autocomplete: 'tel', placeholder: '300 123 4567' }) : null;
+    var err = el('p', { clase: 'error oculto' });
+    var boton = el('button', { clase: 'btn btn-p', texto: S.cambiando ? 'Cambiar a este horario' : 'Confirmar reunión' });
+    boton.addEventListener('click', function () {
+      err.classList.add('oculto');
+      var datos = { nombre: nombre.value.trim(), correo: correo.value.trim(), telefono: tel ? tel.value.trim() : '' };
+      if (!datos.nombre) { err.textContent = 'Escribe tu nombre, por favor.'; err.classList.remove('oculto'); return; }
+      if (tel && datos.telefono.replace(/\D/g, '').length < 10) { err.textContent = 'Escribe tu número de WhatsApp (10 dígitos).'; err.classList.remove('oculto'); return; }
+      boton.disabled = true; boton.textContent = 'Agendando…';
+      google.script.run.withSuccessHandler(function (r) {
+        if (!r.ok) { cargarConAviso(r.mensaje); return; }
+        vistaListo(r);
+      }).withFailureHandler(function (e) {
+        boton.disabled = false; boton.textContent = 'Confirmar reunión';
+        err.textContent = mensajeError(e); err.classList.remove('oculto');
+      }).agendaReservar(S.id, S.slot.inicio, datos);
+    });
+    return el('div', { id: 'form' },
+      el('div', { clase: 'resumen', texto: '🗓️ ' + diaSel.etiquetaLarga + ' · ' + S.slot.etiqueta }),
+      el('label', { for: 'nombre', texto: 'Nombre' }), nombre,
+      tel ? el('label', { for: 'tel', texto: 'WhatsApp' }) : null, tel,
+      el('label', { for: 'correo', texto: 'Correo (recomendado)' }), correo,
+      el('div', { clase: 'ayuda', texto: 'Te enviaremos la invitación con el link de Google Meet.' }),
+      err, boton);
+  }
+
+  function cargarConAviso(msg) {
+    cargando('Actualizando horarios…');
+    google.script.run.withSuccessHandler(function (d) { S.d = d; S.dia = 0; S.slot = null; vistaElegir(msg); })
+      .withFailureHandler(function (e) { errorTotal(mensajeError(e)); }).agendaDatos(S.id);
+  }
+
+  function utc(iso) { return new Date(iso).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''); }
+
+  function vistaListo(r) {
+    var gcal = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(r.titulo) +
+      '&dates=' + utc(r.inicio) + '/' + utc(r.fin) + '&details=' + encodeURIComponent('Google Meet: ' + (r.meet || ''));
+    pintar(el('div', { clase: 'ok' },
+      el('div', { clase: 'icono', texto: '✓' }),
+      el('h1', { texto: (r.reprogramada ? '¡Horario actualizado, ' : '¡Listo, ') + r.nombre + '!' }),
+      el('p', { clase: 'desc', texto: 'Tu reunión quedó agendada para:' }),
+      el('div', { clase: 'resumen', texto: '🗓️ ' + r.dia + ' · ' + r.hora }),
+      r.meet ? el('a', { clase: 'btn btn-p', href: r.meet, target: '_blank', rel: 'noopener', texto: 'Link de Google Meet' }) : null,
+      r.conCorreo ? el('p', { clase: 'ayuda', texto: '📩 Te enviamos la invitación a tu correo.' })
+        : el('a', { clase: 'btn btn-s', href: gcal, target: '_blank', rel: 'noopener', texto: 'Agregar a mi calendario' }),
+      el('p', { clase: 'ayuda', texto: 'Guarda este link: si necesitas cambiar el horario, ábrelo de nuevo.' })));
+  }
+
+  google.script.url.getLocation(function (loc) {
+    S.id = String((loc.parameter && loc.parameter.id) || '').replace(/[^A-Za-z0-9_-]/g, '');
+    cargar();
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+id,created_time,ad_id,ad_name,campaign_name,form_name,full_name,phone_number,email,city
+l:1001,2026-11-15T10:12:00-0500,120001,Video 1,Ads Nov 2026,Formulario intercambio,MARIA PEREZ,p:+573000000001,maria.ejemplo@example.com,Medellín
+l:1002,2026-11-15T11:40:00-0500,120001,Video 1,Ads Nov 2026,Formulario intercambio,juan gómez,p:+573000000002,,Bogotá
+l:1003,2026-11-16T09:05:00-0500,120002,Carrusel,Ads Nov 2026,Formulario intercambio,Laura Ríos,p:+573000000003,laura.ejemplo@example.com,Cali
