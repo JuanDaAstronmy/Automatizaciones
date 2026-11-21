@@ -11,6 +11,7 @@ function preparado(opciones = {}) {
   env.config('URL de la app web', URL);
   env.config('Nombres del equipo', 'David, Ana');
   env.config('Correos invitados a cada reunión', 'entrevistas@example.com');
+  if (!opciones.sesiones) env.config('Duración de la reunión (minutos)', '30');
   if (!opciones.sesiones) env.hoja('Sesiones').data.forEach((f, i) => { if (i > 0) f[6] = 'NO'; }); // modo horario semanal
   const imp = env.hoja('Importar');
   imp.data = [
