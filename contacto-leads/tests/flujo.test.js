@@ -398,6 +398,6 @@ test('Enviar un mensaje "No cumple" marca al lead como No cumple', () => {
   const { env } = preparado();
   const clave = env.props.get('CLAVE_PANEL');
   const id = porNombre(env, 'Juan Gómez').ID;
-  assert.equal(env.llamar('panelRegistrarEnvio', clave, id, 'RESP_NOCUMPLE_EDAD', 'Juan David').estado, 'No cumple');
+  assert.equal(env.llamar('panelRegistrarEnvio', clave, id, 'RESP_NOCUMPLE_EDAD_MAYOR', 'Juan David').estado, 'No cumple');
   assert.ok(env.hoja('Mensajes').objetos().some((m) => m.Clave === 'RESP_CUMPLE'));
 });
