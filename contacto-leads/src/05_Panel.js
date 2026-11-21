@@ -24,7 +24,7 @@ function contactoParaPanel_(c, url, ahoraMs) {
     ultimoContacto: c.ultimoContacto ? c.ultimoContacto.getTime() : null,
     ultimoContactoTexto: c.ultimoContacto ? haceCuanto_(c.ultimoContacto.getTime(), ahoraMs) : '',
     fechaReunion: c.fechaReunion ? c.fechaReunion.getTime() : null,
-    fechaReunionTexto: c.fechaReunion ? formatearDiaCorto_(c.fechaReunion, off) + ' · ' + formatearHora_(c.fechaReunion, off) : '',
+    fechaReunionTexto: c.fechaReunion ? formatearDiaCorto_(c.fechaReunion, off) + ' · ' + formatearHora_(c.fechaReunion, off) + (c.sesion ? ' · con ' + c.sesion : '') : '',
     linkReunion: c.linkReunion,
     notas: c.notas,
     origen: c.origen,

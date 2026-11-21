@@ -219,6 +219,12 @@ function crearEntorno(opciones = {}) {
           return JSON.parse(JSON.stringify(ev));
         },
         get: (calId, id) => JSON.parse(JSON.stringify(eventos.get(id))),
+        patch: (recurso, calId, id, o) => {
+          const ev = eventos.get(id);
+          Object.assign(ev, JSON.parse(JSON.stringify(recurso)));
+          registro.sendUpdates.push(o && o.sendUpdates);
+          return JSON.parse(JSON.stringify(ev));
+        },
         remove: (calId, id) => { registro.eventosBorrados.push(id); eventos.delete(id); },
       },
       Freebusy: { query: () => ({ calendars: { primary: { busy: opciones.ocupadoPrincipal || [] } } }) },

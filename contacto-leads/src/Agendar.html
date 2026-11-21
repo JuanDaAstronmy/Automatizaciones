@@ -30,6 +30,8 @@
   .horas { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
   .hora { border: 1.5px solid var(--azul); color: var(--azul); background: transparent; border-radius: 10px; padding: 11px 6px; font: inherit; font-weight: 600; cursor: pointer; }
   .hora.sel { background: var(--azul); color: #fff; }
+  .hora small { display: block; font-weight: 500; font-size: 12px; opacity: .85; margin-top: 2px; }
+  .horas:has(.sesion) { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
   label { display: block; font-size: 14px; font-weight: 600; margin: 14px 0 6px; }
   input { width: 100%; padding: 12px; border: 1.5px solid var(--borde); border-radius: 10px; font: inherit; background: var(--tarjeta); color: var(--texto); }
   input:focus { outline: none; border-color: var(--azul); }
@@ -111,7 +113,7 @@
     pintar(el('div', {}, encabezado(),
       el('p', { clase: 'hola', texto: 'Hola, ' + S.d.contacto.primerNombre + ' 👋' }),
       el('p', { texto: 'Ya tienes una reunión agendada:' }),
-      el('div', { clase: 'resumen', texto: '🗓️ ' + r.dia + ' · ' + r.hora }),
+      el('div', { clase: 'resumen', texto: '🗓️ ' + r.dia + ' · ' + r.hora + (r.anfitrion ? ' · con ' + r.anfitrion : '') }),
       r.meet ? el('a', { clase: 'btn btn-p', href: r.meet, target: '_blank', rel: 'noopener', texto: 'Abrir Google Meet' }) : null,
       el('button', { clase: 'btn btn-s', texto: 'Cambiar de horario', onclick: function () { S.cambiando = true; vistaElegir(); } }),
       el('button', { clase: 'btn btn-t', texto: 'Cancelar la reunión', onclick: cancelar })));
@@ -146,7 +148,8 @@
     cont.appendChild(el('div', { clase: 'paso', texto: '2 · Elige la hora · ' + diaSel.etiquetaLarga }));
     var horas = el('div', { clase: 'horas' });
     diaSel.horarios.forEach(function (h) {
-      horas.appendChild(el('button', { clase: 'hora' + (S.slot && S.slot.inicio === h.inicio ? ' sel' : ''), texto: h.etiqueta, onclick: function () { S.slot = h; vistaElegir(); setTimeout(function () { var f = document.getElementById('form'); if (f) f.scrollIntoView({ behavior: 'smooth' }); }, 50); } }));
+      horas.appendChild(el('button', { clase: 'hora' + (h.anfitrion ? ' sesion' : '') + (S.slot && S.slot.inicio === h.inicio ? ' sel' : ''), onclick: function () { S.slot = h; vistaElegir(); setTimeout(function () { var f = document.getElementById('form'); if (f) f.scrollIntoView({ behavior: 'smooth' }); }, 50); } },
+        h.etiqueta, h.anfitrion ? el('small', { texto: 'con ' + h.anfitrion }) : null));
     });
     cont.appendChild(horas);
     if (S.slot) cont.appendChild(formulario(diaSel));
@@ -178,7 +181,7 @@
       }).agendaReservar(S.id, S.slot.inicio, datos);
     });
     return el('div', { id: 'form' },
-      el('div', { clase: 'resumen', texto: '🗓️ ' + diaSel.etiquetaLarga + ' · ' + S.slot.etiqueta }),
+      el('div', { clase: 'resumen', texto: '🗓️ ' + diaSel.etiquetaLarga + ' · ' + S.slot.etiqueta + (S.slot.anfitrion ? ' · con ' + S.slot.anfitrion : '') }),
       el('label', { for: 'nombre', texto: 'Nombre' }), nombre,
       tel ? el('label', { for: 'tel', texto: 'WhatsApp' }) : null, tel,
       el('label', { for: 'correo', texto: 'Correo (recomendado)' }), correo,
@@ -201,7 +204,7 @@
       el('div', { clase: 'icono', texto: '✓' }),
       el('h1', { texto: (r.reprogramada ? '¡Horario actualizado, ' : '¡Listo, ') + r.nombre + '!' }),
       el('p', { clase: 'desc', texto: 'Tu reunión quedó agendada para:' }),
-      el('div', { clase: 'resumen', texto: '🗓️ ' + r.dia + ' · ' + r.hora }),
+      el('div', { clase: 'resumen', texto: '🗓️ ' + r.dia + ' · ' + r.hora + (r.anfitrion ? ' · con ' + r.anfitrion : '') }),
       r.meet ? el('a', { clase: 'btn btn-p', href: r.meet, target: '_blank', rel: 'noopener', texto: 'Link de Google Meet' }) : null,
       r.conCorreo ? el('p', { clase: 'ayuda', texto: '📩 Te enviamos la invitación a tu correo.' })
         : el('a', { clase: 'btn btn-s', href: gcal, target: '_blank', rel: 'noopener', texto: 'Agregar a mi calendario' }),

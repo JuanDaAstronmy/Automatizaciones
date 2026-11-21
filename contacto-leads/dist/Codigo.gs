@@ -16,6 +16,7 @@ const VERSION = '1.0.0';
 const HOJAS = {
   INICIO: 'Inicio',
   CONTACTOS: 'Contactos',
+  SESIONES: 'Sesiones',
   AGENDADOS: 'Agendados',
   IMPORTAR: 'Importar',
   MENSAJES: 'Mensajes',
@@ -41,12 +42,13 @@ const COL = {
   LINK_AGENDA: 'Link para agendar',
   INFO_EXTRA: 'Info del formulario',
   CREADO: 'Creado',
+  SESION: 'Sesión con',
   EVENTO_ID: 'Evento (técnico)',
 };
 
 const COLUMNAS_CONTACTOS = [
   COL.ID, COL.NOMBRE, COL.TELEFONO, COL.CORREO, COL.ESTADO, COL.RESPONSABLE,
-  COL.INTENTOS, COL.ULTIMO_CONTACTO, COL.FECHA_REUNION, COL.LINK_REUNION,
+  COL.INTENTOS, COL.ULTIMO_CONTACTO, COL.FECHA_REUNION, COL.SESION, COL.LINK_REUNION,
   COL.AGENDADO_EL, COL.NOTAS, COL.ORIGEN, COL.LINK_AGENDA, COL.INFO_EXTRA,
   COL.CREADO, COL.EVENTO_ID,
 ];
@@ -55,6 +57,7 @@ const COLUMNAS_CONTACTOS = [
 const COLA = {
   ID: 'ID',
   REUNION: 'Reunión',
+  SESION: 'Quién la da',
   NOMBRE: 'Nombre',
   TELEFONO: 'Teléfono',
   CORREO: 'Correo',
@@ -66,10 +69,23 @@ const COLA = {
   NOTAS: 'Notas de la entrevista',
 };
 const COLUMNAS_AGENDADOS = [
-  COLA.REUNION, COLA.NOMBRE, COLA.TELEFONO, COLA.CORREO, COLA.LINK, COLA.RESPONSABLE,
+  COLA.REUNION, COLA.SESION, COLA.NOMBRE, COLA.TELEFONO, COLA.CORREO, COLA.LINK, COLA.RESPONSABLE,
   COLA.ESTADO, COLA.RESULTADO, COLA.NOTAS, COLA.AGENDADO_EL, COLA.ID,
 ];
 const RESULTADOS = ['Asistió', 'No asistió', 'Reprogramar'];
+
+/**
+ * Pestaña Sesiones (opcional): sesiones fijas y grupales, cada una con quien la da.
+ * Si tiene al menos una fila activa, reemplaza los "Horario lunes…domingo" de Config.
+ */
+const COLUMNAS_SESIONES = ['Día', 'Hora', 'Duración (min)', 'Quién la da', 'Correos de quien la da', 'Cupos', 'Activa'];
+const SESIONES_INICIALES = [
+  ['Miércoles', '15:00', 60, 'Ana', '', 15, 'SI'],
+  ['Jueves', '15:00', 60, 'Ana', '', 15, 'SI'],
+  ['Viernes', '19:00', 60, 'Aleja', '', 15, 'SI'],
+  ['Sábado', '09:00', 60, 'Aleja', '', 15, 'SI'],
+  ['Miércoles', '18:00', 60, 'Leidy y Cristian', '', 15, 'SI'],
+];
 
 const COLUMNAS_REGISTRO = ['Fecha', 'Acción', 'ID', 'Nombre', 'Detalle', 'Por'];
 const COLUMNAS_MENSAJES = ['Clave', 'Nombre del botón', 'Texto', 'Para qué sirve'];
@@ -111,13 +127,13 @@ const MSG = {
  */
 const DEF_CONFIG = [
   { k: 'ORG', tipo: 'texto', def: 'AIESEC', etiqueta: 'Nombre de la organización', ayuda: 'Aparece en la página de agendamiento y en los mensajes ({organizacion}).' },
-  { k: 'TIPO_REUNION', tipo: 'texto', def: 'Entrevista AIESEC', etiqueta: 'Nombre de la reunión', ayuda: 'Título de la página y del evento en el calendario.' },
-  { k: 'DESCRIPCION', tipo: 'texto', def: 'Una llamada corta por Google Meet para conocerte y resolver tus dudas sobre el programa.', etiqueta: 'Descripción para el aplicante', ayuda: 'Texto corto que ve el aplicante al abrir su link.' },
+  { k: 'TIPO_REUNION', tipo: 'texto', def: 'Sesión informativa AIESEC', etiqueta: 'Nombre de la reunión', ayuda: 'Título de la página y del evento en el calendario.' },
+  { k: 'DESCRIPCION', tipo: 'texto', def: 'Una sesión grupal por Google Meet para contarte cómo funciona Voluntario Global, los proyectos y el beneficio de Black November, y resolver tus dudas. Puedes invitar a tu familia.', etiqueta: 'Descripción para el aplicante', ayuda: 'Texto corto que ve el aplicante al abrir su link.' },
   { k: 'URL_WEB', tipo: 'texto', def: '', etiqueta: 'URL de la app web', ayuda: 'Pega aquí la URL que termina en /exec (Implementar → Nueva implementación → App web).' },
   { k: 'EQUIPO', tipo: 'texto', def: '', etiqueta: 'Nombres del equipo', ayuda: 'Separados por coma. Aparecen en el panel para elegir "¿Quién eres?" y llenan {remitente}.' },
   { k: 'CORREOS_REPORTE', tipo: 'texto', def: '', etiqueta: 'Correos que reciben el resumen', ayuda: 'Separados por coma. Reciben el resumen de las 12:00 y las 20:00.' },
   { k: 'CORREOS_INVITADOS', tipo: 'texto', def: '', etiqueta: 'Correos invitados a cada reunión', ayuda: 'Separados por coma. Quienes harán las entrevistas: les llega la invitación con el Meet.' },
-  { k: 'DURACION', tipo: 'num', def: 30, etiqueta: 'Duración de la reunión (minutos)', ayuda: '' },
+  { k: 'DURACION', tipo: 'num', def: 60, etiqueta: 'Duración de la reunión (minutos)', ayuda: '' },
   { k: 'PASO', tipo: 'num', def: 30, etiqueta: 'Cada cuántos minutos empieza un horario', ayuda: 'Ej.: 30 → 9:00, 9:30, 10:00…' },
   { k: 'CUPOS', tipo: 'num', def: 1, etiqueta: 'Reuniones a la misma hora', ayuda: 'Pon 2 si dos personas del equipo pueden entrevistar en paralelo.' },
   { k: 'ANTICIPACION', tipo: 'num', def: 3, etiqueta: 'Anticipación mínima para agendar (horas)', ayuda: 'Evita que alguien agende para dentro de 10 minutos.' },
@@ -395,6 +411,14 @@ function parseHorario_(texto) {
   return tramos.sort(function (a, b) { return a[0] - b[0]; });
 }
 
+/** "15:00", "3pm", "3:00 p. m." → minutos desde medianoche (o null). */
+function parseHora_(texto) {
+  const m = /^\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.?\s?m\.?|p\.?\s?m\.?)?\s*$/i.exec(String(texto || '').toLowerCase());
+  return m ? aMinutos_(m[1], m[2], m[3]) : null;
+}
+
+const DIAS_NORM = { domingo: 0, lunes: 1, martes: 2, miercoles: 3, jueves: 4, viernes: 5, sabado: 6 };
+
 function aMinutos_(h, mi, ampm) {
   h = Number(h); mi = Number(mi || 0);
   if (ampm) {
@@ -458,7 +482,17 @@ function calcularHorarios_(p) {
     const clave = claveFecha_(y, m, d);
     if (festivos[clave] || bloqueadas.indexOf(clave) >= 0) continue;
     const horarios = [];
-    (p.horario[t.getUTCDay()] || []).forEach(function (tramo) {
+    (p.sesiones || []).forEach(function (se) {
+      if (se.dow !== t.getUTCDay()) return;
+      const s = fechaDesdeLocal_(y, m, d, se.inicioMin, off).getTime();
+      const e = s + se.duracion * MS_MIN;
+      if (s < limite) return;
+      if (bloqueos.some(function (b) { return b.inicio < e && b.fin > s; })) return;
+      const inscritos = reservas.filter(function (r) { return r.inicio === s; }).length;
+      if (inscritos >= se.cupos) return;
+      horarios.push({ inicio: isoConOffset_(new Date(s), off), ms: s, etiqueta: formatearHora_(new Date(s), off), anfitrion: se.anfitrion, duracion: se.duracion, cuposLibres: se.cupos - inscritos });
+    });
+    (p.sesiones && p.sesiones.length ? [] : (p.horario[t.getUTCDay()] || [])).forEach(function (tramo) {
       const finTramo = fechaDesdeLocal_(y, m, d, tramo[1], off).getTime();
       for (let s = fechaDesdeLocal_(y, m, d, tramo[0], off).getTime(); s + dur <= finTramo; s += paso) {
         if (s < limite) continue;
@@ -467,7 +501,7 @@ function calcularHorarios_(p) {
         const ocupados = reservas.filter(function (r) { return r.inicio < e && r.fin > s; }).length;
         if (ocupados >= cupos) continue;
         if (horarios.some(function (h) { return h.ms === s; })) continue;
-        horarios.push({ inicio: isoConOffset_(new Date(s), off), ms: s, etiqueta: formatearHora_(new Date(s), off) });
+        horarios.push({ inicio: isoConOffset_(new Date(s), off), ms: s, etiqueta: formatearHora_(new Date(s), off), anfitrion: '', duracion: p.duracionMin });
       }
     });
     if (!horarios.length) continue;
@@ -585,6 +619,7 @@ function aContacto_(f) {
     notas: String(f[COL.NOTAS] || ''),
     origen: String(f[COL.ORIGEN] || ''),
     eventoId: String(f[COL.EVENTO_ID] || '').trim(),
+    sesion: String(f[COL.SESION] || '').trim(),
     creado: esFecha_(f[COL.CREADO]) ? f[COL.CREADO] : null,
   };
 }
@@ -830,6 +865,32 @@ function horarioSemanal_(cfg) {
   return h;
 }
 
+/** Lee la pestaña Sesiones: [{dow, inicioMin, duracion, anfitrion, correos, cupos}] (vacío = usar horarios de Config). */
+function leerSesiones_() {
+  const sh = libro_().getSheetByName(HOJAS.SESIONES);
+  if (!sh || sh.getLastRow() < 2) return [];
+  const cfg = getConfig_();
+  return leerTabla_(sh).filas.map(function (f) {
+    let hora = f['Hora'];
+    if (esFecha_(hora)) hora = Utilities.formatDate(hora, zona_(), 'HH:mm');
+    const activa = String(f['Activa'] === undefined ? 'SI' : f['Activa']).trim();
+    return {
+      dow: DIAS_NORM[normalizarTexto_(f['Día'])],
+      inicioMin: parseHora_(hora),
+      duracion: Math.max(5, Number(f['Duración (min)']) || cfg.DURACION),
+      anfitrion: String(f['Quién la da'] || '').trim(),
+      correos: listaCorreos_(f['Correos de quien la da']),
+      cupos: Math.max(1, Math.floor(Number(f['Cupos']) || cfg.CUPOS)),
+      activa: activa === '' || siNo_(activa),
+    };
+  }).filter(function (s) { return s.activa && s.dow !== undefined && s.inicioMin !== null && s.anfitrion; });
+}
+
+function aplicantesDe_(ev) {
+  const p = (ev.extendedProperties && ev.extendedProperties.private) || {};
+  return String(p.aplicantes || p.contactoId || '').split(',').filter(String);
+}
+
 function esReserva_(ev) {
   return !!(ev.extendedProperties && ev.extendedProperties.private && ev.extendedProperties.private.aiesecReserva === '1');
 }
@@ -866,7 +927,10 @@ function horariosDisponibles_(ahora) {
   eventosEnRango_(calendarioId_(), desde, hasta).forEach(function (ev) {
     if (ev.status === 'cancelled') return;
     const it = intervaloEvento_(ev, off);
-    if (esReserva_(ev)) reservas.push(it);
+    if (esReserva_(ev)) {
+      const n = Math.max(1, aplicantesDe_(ev).length);
+      for (let i = 0; i < n; i++) reservas.push(it);
+    }
     else if (ev.transparency !== 'transparent') bloqueos.push(it);
   });
   if (cfg.REVISAR_PRINCIPAL) {
@@ -886,7 +950,7 @@ function horariosDisponibles_(ahora) {
   return calcularHorarios_({
     ahora: ahora, offMin: off, horario: horarioSemanal_(cfg), duracionMin: cfg.DURACION, pasoMin: cfg.PASO,
     anticipacionMin: cfg.ANTICIPACION * 60, dias: cfg.DIAS, cupos: cfg.CUPOS, reservas: reservas, bloqueos: bloqueos,
-    festivos: festivos, fechasBloqueadas: listaTexto_(cfg.FECHAS_BLOQUEADAS),
+    festivos: festivos, fechasBloqueadas: listaTexto_(cfg.FECHAS_BLOQUEADAS), sesiones: leerSesiones_(),
   });
 }
 
@@ -939,6 +1003,90 @@ function crearEventoReunion_(contacto, inicioMs) {
   return { eventoId: ev.id, meet: meet, htmlLink: ev.htmlLink || '' };
 }
 
+/**
+ * Sesión grupal: todos los que agendan la misma sesión entran al MISMO evento (mismo Meet).
+ * Quien la da recibe la invitación una vez; a cada aplicante le llega su propio correo de confirmación.
+ */
+function unirseASesion_(contacto, slot) {
+  const cfg = getConfig_();
+  const calId = calendarioId_();
+  const sesion = leerSesiones_().filter(function (s) { return s.anfitrion === slot.anfitrion; })[0] || { correos: [] };
+  const clave = 'S' + slot.ms;
+  const existente = eventosEnRango_(calId, new Date(slot.ms - MS_MIN), new Date(slot.ms + MS_MIN)).filter(function (ev) {
+    return ev.status !== 'cancelled' && esReserva_(ev) && ev.extendedProperties.private.sesion === clave;
+  })[0];
+  let ev;
+  if (existente) {
+    const ids = aplicantesDe_(existente);
+    if (ids.indexOf(contacto.id) < 0) ids.push(contacto.id);
+    const asistentes = (existente.attendees || []).slice();
+    if (correoValido_(contacto.correo) && !asistentes.some(function (a) { return String(a.email).toLowerCase() === contacto.correo.toLowerCase(); })) {
+      asistentes.push({ email: contacto.correo, displayName: contacto.nombre });
+    }
+    const priv = Object.assign({}, existente.extendedProperties.private, { aplicantes: ids.join(',') });
+    ev = Calendar.Events.patch({ attendees: asistentes, extendedProperties: { private: priv } }, calId, existente.id, { sendUpdates: 'none' });
+  } else {
+    const off = offsetMinutos_(new Date(slot.ms));
+    const asistentes = sesion.correos.map(function (e) { return { email: e }; });
+    listaCorreos_(cfg.CORREOS_INVITADOS).forEach(function (e) { if (sesion.correos.indexOf(e) < 0) asistentes.push({ email: e }); });
+    if (correoValido_(contacto.correo)) asistentes.push({ email: contacto.correo, displayName: contacto.nombre });
+    ev = Calendar.Events.insert({
+      summary: cfg.TIPO_REUNION + ' · con ' + slot.anfitrion,
+      description: cfg.DESCRIPCION + '\n\nDa la sesión: ' + slot.anfitrion + '\nSesión grupal: los inscritos se ven en la hoja (pestaña Agendados).',
+      start: { dateTime: isoConOffset_(new Date(slot.ms), off), timeZone: zona_() },
+      end: { dateTime: isoConOffset_(new Date(slot.ms + slot.duracion * MS_MIN), off), timeZone: zona_() },
+      attendees: asistentes,
+      guestsCanSeeOtherGuests: false,
+      conferenceData: { createRequest: { requestId: Utilities.getUuid(), conferenceSolutionKey: { type: 'hangoutsMeet' } } },
+      extendedProperties: { private: { aiesecReserva: '1', sesion: clave, aplicantes: contacto.id, anfitrion: slot.anfitrion } },
+      reminders: { useDefault: false, overrides: [{ method: 'popup', minutes: 30 }, { method: 'popup', minutes: 10 }] },
+    }, calId, { conferenceDataVersion: 1, sendUpdates: asistentes.length ? 'all' : 'none' });
+  }
+  let meet = linkMeet_(ev);
+  for (let i = 0; !meet && i < 4; i++) { Utilities.sleep(1500); ev = Calendar.Events.get(calId, ev.id); meet = linkMeet_(ev); }
+  if (existente) confirmarPorCorreo_(contacto, slot, meet);
+  return { eventoId: ev.id, meet: meet, htmlLink: ev.htmlLink || '' };
+}
+
+/** Correo de confirmación al aplicante que se une a una sesión ya creada (así no se re-notifica a todo el grupo). */
+function confirmarPorCorreo_(contacto, slot, meet) {
+  if (!correoValido_(contacto.correo)) return;
+  const cfg = getConfig_();
+  const off = offsetMinutos_(new Date(slot.ms));
+  const cuando = formatearDia_(new Date(slot.ms), off) + ' a las ' + formatearHora_(new Date(slot.ms), off) + ' (hora Colombia)';
+  const e = escaparHtml_;
+  try {
+    MailApp.sendEmail({
+      to: contacto.correo,
+      subject: cfg.TIPO_REUNION + ': ' + cuando,
+      name: cfg.ORG,
+      htmlBody: '<p>¡Hola, ' + e(contacto.primerNombre || contacto.nombre) + '! 👋</p><p>Quedaste inscrito/a en la <b>' + e(cfg.TIPO_REUNION) +
+        '</b> con ' + e(slot.anfitrion) + ':</p><p style="font-size:16px"><b>🗓️ ' + e(cuando) + '</b></p>' +
+        (meet ? '<p><a href="' + e(meet) + '">Entrar a Google Meet</a></p>' : '') +
+        (linkAgenda_(contacto.id) ? '<p>¿Necesitas cambiar el horario? <a href="' + e(linkAgenda_(contacto.id)) + '">Hazlo aquí</a>.</p>' : '') +
+        '<p>¡Te esperamos!<br>' + e(cfg.ORG) + '</p>',
+    });
+  } catch (err) {
+    console.warn('No se pudo enviar la confirmación: ' + err);
+  }
+}
+
+/** Saca al aplicante de su reunión: si es sesión grupal solo lo quita a él; si queda vacía (o es individual) borra el evento. */
+function liberarReserva_(contacto) {
+  if (!contacto.eventoId) return;
+  const calId = calendarioId_();
+  let ev = null;
+  try { ev = Calendar.Events.get(calId, contacto.eventoId); } catch (e) { ev = null; }
+  if (!ev || ev.status === 'cancelled') return;
+  const priv = (ev.extendedProperties && ev.extendedProperties.private) || {};
+  if (!priv.sesion) { borrarEvento_(contacto.eventoId); return; }
+  const ids = aplicantesDe_(ev).filter(function (x) { return x !== contacto.id; });
+  if (!ids.length) { borrarEvento_(contacto.eventoId); return; }
+  const correo = String(contacto.correo || '').toLowerCase();
+  const asistentes = (ev.attendees || []).filter(function (a) { return !correo || String(a.email).toLowerCase() !== correo; });
+  Calendar.Events.patch({ attendees: asistentes, extendedProperties: { private: Object.assign({}, priv, { aplicantes: ids.join(',') }) } }, calId, ev.id, { sendUpdates: 'none' });
+}
+
 function borrarEvento_(eventoId) {
   if (!eventoId) return;
   try {
@@ -956,6 +1104,7 @@ function upsertAgendado_(c, estadoReunion) {
   const datos = {};
   datos[COLA.ID] = c.id;
   datos[COLA.REUNION] = c.fechaReunion || '';
+  datos[COLA.SESION] = c.sesion || '';
   datos[COLA.NOMBRE] = c.nombre;
   datos[COLA.TELEFONO] = c.telefono;
   datos[COLA.CORREO] = c.correo;
@@ -988,6 +1137,7 @@ function respuestaContacto_(c) {
       dia: formatearDia_(c.fechaReunion, off),
       hora: formatearHora_(c.fechaReunion, off),
       meet: c.linkReunion,
+      anfitrion: c.sesion || '',
     } : null,
   };
 }
@@ -1045,10 +1195,11 @@ function agendaReservar(id, inicioISO, datos) {
     const inicio = new Date(String(inicioISO || ''));
     if (isNaN(inicio.getTime())) throw new Error('Elige un horario.');
     const ahora = new Date();
-    const libre = horariosDisponibles_(ahora).some(function (d) {
-      return d.horarios.some(function (h) { return h.ms === inicio.getTime(); });
+    let slot = null;
+    horariosDisponibles_(ahora).forEach(function (d) {
+      d.horarios.forEach(function (h) { if (h.ms === inicio.getTime()) slot = h; });
     });
-    if (!libre) return { ok: false, ocupado: true, mensaje: 'Ese horario se acaba de ocupar 😕 Elige otro, por favor.' };
+    if (!slot) return { ok: false, ocupado: true, mensaje: 'Ese horario se acaba de ocupar 😕 Elige otro, por favor.' };
 
     if (!contacto) {
       const tel = normalizarTelefono_(datos.telefono, cfg.PAIS);
@@ -1080,8 +1231,9 @@ function agendaReservar(id, inicioISO, datos) {
     contacto.nombre = contacto.nombre || nombre;
     contacto.primerNombre = primerNombre_(contacto.nombre);
     if (correo) contacto.correo = correo;
-    const ev = crearEventoReunion_(contacto, inicio.getTime());
-    if (anterior && anterior !== ev.eventoId) borrarEvento_(anterior);
+    const previo = { id: contacto.id, correo: contacto.correo, eventoId: anterior };
+    const ev = slot.anfitrion ? unirseASesion_(contacto, slot) : crearEventoReunion_(contacto, inicio.getTime());
+    if (anterior && anterior !== ev.eventoId) liberarReserva_(previo);
 
     const cambios = {};
     cambios[COL.ESTADO] = ESTADO.AGENDADO;
@@ -1089,6 +1241,7 @@ function agendaReservar(id, inicioISO, datos) {
     cambios[COL.LINK_REUNION] = ev.meet;
     cambios[COL.AGENDADO_EL] = ahora;
     cambios[COL.EVENTO_ID] = ev.eventoId;
+    cambios[COL.SESION] = slot.anfitrion || '';
     if (correo) cambios[COL.CORREO] = correo;
     if (sinNombre) cambios[COL.NOMBRE] = nombre;
     actualizarFila_(tabla, contacto._fila, cambios);
@@ -1098,6 +1251,7 @@ function agendaReservar(id, inicioISO, datos) {
     contacto.linkReunion = ev.meet;
     contacto.agendadoEl = ahora;
     contacto.eventoId = ev.eventoId;
+    contacto.sesion = slot.anfitrion || '';
     upsertAgendado_(contacto, anterior ? 'Reprogramada' : 'Programada');
 
     const off = offsetMinutos_(inicio);
@@ -1111,7 +1265,8 @@ function agendaReservar(id, inicioISO, datos) {
       dia: formatearDia_(inicio, off),
       hora: formatearHora_(inicio, off),
       inicio: isoConOffset_(inicio, off),
-      fin: isoConOffset_(new Date(inicio.getTime() + cfg.DURACION * MS_MIN), off),
+      fin: isoConOffset_(new Date(inicio.getTime() + (slot.duracion || cfg.DURACION) * MS_MIN), off),
+      anfitrion: slot.anfitrion || '',
       meet: ev.meet,
       titulo: cfg.TIPO_REUNION,
       conCorreo: correoValido_(contacto.correo),
@@ -1131,12 +1286,13 @@ function agendaCancelar(id) {
     if (!r) throw new Error('Este link no es válido.');
     const c = r.contacto;
     if (c.estado !== ESTADO.AGENDADO) return { ok: true };
-    borrarEvento_(c.eventoId);
+    liberarReserva_(c);
     const cambios = {};
     cambios[COL.ESTADO] = ESTADO.RESPONDIO;
     cambios[COL.FECHA_REUNION] = '';
     cambios[COL.LINK_REUNION] = '';
     cambios[COL.EVENTO_ID] = '';
+    cambios[COL.SESION] = '';
     actualizarFila_(r.tabla, c._fila, cambios);
     upsertAgendado_(c, 'Cancelada');
     registrar_('Canceló', c.id, c.nombre, c.fechaReunion ? formatearFechaHora_(c.fechaReunion, offsetMinutos_(c.fechaReunion)) : '', 'Aplicante');
@@ -1173,7 +1329,7 @@ function contactoParaPanel_(c, url, ahoraMs) {
     ultimoContacto: c.ultimoContacto ? c.ultimoContacto.getTime() : null,
     ultimoContactoTexto: c.ultimoContacto ? haceCuanto_(c.ultimoContacto.getTime(), ahoraMs) : '',
     fechaReunion: c.fechaReunion ? c.fechaReunion.getTime() : null,
-    fechaReunionTexto: c.fechaReunion ? formatearDiaCorto_(c.fechaReunion, off) + ' · ' + formatearHora_(c.fechaReunion, off) : '',
+    fechaReunionTexto: c.fechaReunion ? formatearDiaCorto_(c.fechaReunion, off) + ' · ' + formatearHora_(c.fechaReunion, off) + (c.sesion ? ' · con ' + c.sesion : '') : '',
     linkReunion: c.linkReunion,
     notas: c.notas,
     origen: c.origen,
@@ -1396,7 +1552,7 @@ function construirResumen_(o) {
     (nuevos.length ? nuevos.length + (nuevos.length === 1 ? ' nuevo agendado' : ' nuevos agendados') : 'sin agendados nuevos');
 
   const e = escaparHtml_;
-  const fechaCorta = function (c) { return formatearDiaCorto_(c.fechaReunion, off) + ' · ' + formatearHora_(c.fechaReunion, off); };
+  const fechaCorta = function (c) { return formatearDiaCorto_(c.fechaReunion, off) + ' · ' + formatearHora_(c.fechaReunion, off) + (c.sesion ? ' · con ' + c.sesion : ''); };
   const boton = function (href, txt, color) {
     return '<a href="' + e(href) + '" style="display:inline-block;padding:4px 10px;border-radius:6px;background:' + (color || '#037ef3') + ';color:#fff;text-decoration:none;font-size:12px;margin:2px 4px 2px 0">' + e(txt) + '</a>';
   };
@@ -1717,16 +1873,25 @@ const MANEJADORES = ['trigResumen', 'trigHorario'];
 
 const MENSAJES_INICIALES = [
   [MSG.PRIMER, '1er mensaje',
-    '¡Hola, {primer_nombre}! 👋 Soy {remitente}, de {organizacion}.\n\nVimos que te registraste en nuestra convocatoria y nos encantaría contarte todos los detalles. 🌍\n\nElige aquí el horario que mejor te quede para una llamada corta por Google Meet:\n{link}\n\n¡Quedo atento/a a cualquier duda!',
-    'Primer mensaje a cada lead. {link} es SU link personal para agendar. Reemplázalo por el tuyo.'],
+    '¡Hola, {primer_nombre}! 👋 ¿Cómo vas?\nSoy {remitente} de AIESEC Colombia. Vi que te interesó vivir una experiencia en el exterior y quería contarte cómo funciona.\n\nCon Voluntario Global puedes viajar a otro país por 6 a 8 semanas, vivir una experiencia intercultural y aportar a un proyecto social conectado con los ODS de la ONU. 🌍\n\nEsta semana tenemos sesiones informativas grupales por Google Meet (puedes invitar a tu familia). Elige la que mejor te quede aquí:\n{link}\n\nY cuéntame: ¿qué es lo que más te llama la atención de irte al exterior? 😊',
+    'Basado en el Mensaje 1 del discurso oGV de Black November. {link} es SU link personal para agendar.'],
   [MSG.SEGUIMIENTO, 'Seguimiento',
-    '¡Hola de nuevo, {primer_nombre}! 😊 Te escribo por si no alcanzaste a ver mi mensaje. Todavía tenemos espacios esta semana para contarte sobre {organizacion}:\n{link}',
+    '¡Hola de nuevo, {primer_nombre}! 😊 Te escribo por si no alcanzaste a ver mi mensaje. Los cupos para las próximas salidas son limitados y el beneficio de Black November tiene fecha límite. Todavía hay espacio en las sesiones informativas de esta semana:\n{link}',
     'Para quienes no respondieron después de 1-2 días.'],
   [MSG.RECORDATORIO, 'Recordatorio',
-    '¡Hola, {primer_nombre}! Te recuerdo nuestra reunión el {fecha_reunion} a las {hora_reunion} (hora Colombia). 🙌\n\nLink de Google Meet: {meet}\n\nSi necesitas cambiar el horario, puedes hacerlo aquí: {link}',
+    '¡Hola, {primer_nombre}! Te recuerdo la sesión informativa de Voluntario Global el {fecha_reunion} a las {hora_reunion} (hora Colombia). 🙌 Si quieres, invita a tu familia.\n\nLink de Google Meet: {meet}\n\nSi necesitas cambiar el horario, puedes hacerlo aquí: {link}',
     'Para el día anterior a la reunión. Sale con un botón en el resumen de las 8 p. m.'],
+  ['RESP_DESPUES_SEMESTRE', 'Más adelante',
+    'Te entiendo, {primer_nombre}, y es válido querer tomarte tu tiempo. Las fechas de salida y los cupos por proyecto son limitados y el beneficio de Black November tiene fecha límite, pero no tienes que viajar ya: puedes asegurar tu proceso ahora y escoger una fecha de salida más adelante. Te cuento todo en la sesión: {link}',
+    'Objeción "hablemos más adelante" (discurso oGV). Confirmen la política de cambio de fecha.'],
+  ['RESP_PAGAR', '¿Por qué pagar?',
+    'Es una duda muy válida. 😊 No pagas por "trabajar gratis": el valor cubre la gestión y el acompañamiento del programa, la preparación antes del viaje, el soporte en el destino y los costos del proyecto. Tú aportas tu tiempo y talento a una comunidad real. En la sesión te mostramos el detalle de lo que incluye: {link}',
+    'Objeción "si es voluntariado, ¿por qué pago?" (discurso oGV). Confirmen qué incluye el valor.'],
+  ['RESP_MIEDO', 'Miedo / seguridad',
+    'Es normal sentir eso y habla bien de ti. No viajas solo/a: AIESEC te acompaña antes, durante y después, tienes contacto en el destino y vives con voluntarios de varios países. Si quieres, tu familia puede entrar a la sesión para resolver sus dudas: {link}',
+    'Objeción de miedo o seguridad (discurso oGV).'],
   ['RESP_QUE_ES', '¿Qué es AIESEC?',
-    'AIESEC es una organización liderada por jóvenes, presente en más de 100 países, que desarrolla liderazgo a través de experiencias de intercambio y voluntariado. 🌎 En la llamada te contamos cómo funciona y qué opciones hay para ti: {link}',
+    'AIESEC es una organización juvenil presente en más de 120 países que conecta a jóvenes de 18 a 30 años con experiencias internacionales para desarrollar su liderazgo y generar impacto social. 🌎 En la sesión te contamos cómo funciona y qué opciones hay para ti: {link}',
     'EJEMPLO de respuesta rápida. Edítala o bórrala. Las claves que empiezan por RESP_ aparecen en "Respuestas" del panel.'],
   ['RESP_COSTO', '¿Tiene costo?',
     'Depende del programa y del destino que elijas. 😊 En la llamada te explicamos los costos, qué incluye cada opción y las facilidades que hay. ¿Agendamos? {link}',
@@ -2091,6 +2256,27 @@ function sembrarMensajes_(sh) {
   sh.getRange(2, 1, Math.max(sh.getMaxRows() - 1, 1), 4).setWrap(true).setVerticalAlignment('top');
 }
 
+function sembrarSesiones_(sh) {
+  const tabla = leerTabla_(sh);
+  sh.getRange(1, 2, sh.getMaxRows(), 1).setNumberFormat('@');
+  if (!tabla.filas.some(function (f) { return String(f['Día'] || '').trim(); })) {
+    agregarFilas_(tabla, SESIONES_INICIALES.map(function (s) {
+      const o = {};
+      COLUMNAS_SESIONES.forEach(function (c, i) { o[c] = s[i]; });
+      return o;
+    }));
+  }
+  const t = leerTabla_(sh);
+  formatoColumna_(sh, t, 'Día', function (r) {
+    r.setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'], true).build());
+  });
+  formatoColumna_(sh, t, 'Activa', function (r) {
+    r.setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['SI', 'NO'], true).build());
+  });
+  sh.setColumnWidth(1, 110); sh.setColumnWidth(4, 160); sh.setColumnWidth(5, 320);
+  sh.getRange(1, 1).setNote('Sesiones fijas y grupales. Si hay al menos una fila activa, se usan estas en vez de los horarios por día de Config. Hora en formato 24 h (15:00) o 3:00 pm. En "Correos" pon el correo de quien la da (separa varios con coma): le llega la invitación con el Meet.');
+}
+
 function asegurarCalendario_() {
   const p = props_();
   const cfg = getConfig_();
@@ -2158,6 +2344,8 @@ function configurarTodo_() {
   const shA = prepararPestana_(HOJAS.AGENDADOS, COLUMNAS_AGENDADOS);
   const shI = prepararPestana_(HOJAS.IMPORTAR, null);
   const shM = prepararPestana_(HOJAS.MENSAJES, COLUMNAS_MENSAJES);
+  const shS = prepararPestana_(HOJAS.SESIONES, COLUMNAS_SESIONES);
+  sembrarSesiones_(shS);
   const shCfg = prepararPestana_(HOJAS.CONFIG, ['Parámetro', 'Valor', 'Ayuda']);
   const shR = prepararPestana_(HOJAS.REGISTRO, COLUMNAS_REGISTRO);
 
@@ -2179,7 +2367,7 @@ function configurarTodo_() {
   const horas = crearTriggers_();
   if (urlWeb_()) refrescarLinks_();
   escribirInicio_();
-  [HOJAS.INICIO, HOJAS.CONTACTOS, HOJAS.AGENDADOS, HOJAS.IMPORTAR, HOJAS.MENSAJES, HOJAS.CONFIG, HOJAS.REGISTRO].forEach(function (n, i) {
+  [HOJAS.INICIO, HOJAS.CONTACTOS, HOJAS.AGENDADOS, HOJAS.SESIONES, HOJAS.IMPORTAR, HOJAS.MENSAJES, HOJAS.CONFIG, HOJAS.REGISTRO].forEach(function (n, i) {
     const s = ss.getSheetByName(n);
     if (s) { ss.setActiveSheet(s); ss.moveActiveSheet(i + 1); }
   });

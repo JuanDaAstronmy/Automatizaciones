@@ -11,6 +11,7 @@ function preparado(opciones = {}) {
   env.config('URL de la app web', URL);
   env.config('Nombres del equipo', 'David, Ana');
   env.config('Correos invitados a cada reunión', 'entrevistas@example.com');
+  if (!opciones.sesiones) env.hoja('Sesiones').data.forEach((f, i) => { if (i > 0) f[6] = 'NO'; }); // modo horario semanal
   const imp = env.hoja('Importar');
   imp.data = [
     ['full_name', 'phone_number', 'email', 'campaign_name', 'city', 'ad_id'],
@@ -112,7 +113,7 @@ test('Agendar: muestra horarios, crea el evento con Meet en el calendario de AIE
 
   const ev = [...env.eventos.values()][0];
   assert.equal(ev._cal, env.props.get('ID_CALENDARIO'), 'el evento va al calendario de AIESEC, no al personal');
-  assert.equal(ev.summary, 'Entrevista AIESEC · Maria Perez');
+  assert.equal(ev.summary, 'Sesión informativa AIESEC · Maria Perez');
   assert.deepEqual(ev.attendees.map((a) => a.email), ['maria@example.com', 'entrevistas@example.com']);
   assert.equal(ev.extendedProperties.private.contactoId, maria.ID);
   assert.equal(env.registro.sendUpdates[0], 'all');
@@ -316,4 +317,43 @@ test('Marcar "Asistió" en Agendados actualiza el estado en Contactos', () => {
   sh.getRange(2, col).setValue('Asistió');
   env.llamar('onEdit', { range: sh.getRange(2, col), source: env.libro, value: 'Asistió' });
   assert.equal(porNombre(env, 'Maria Perez').Estado, 'Asistió');
+});
+
+test('Sesiones grupales: cada persona tiene su horario y todos entran al mismo Meet', () => {
+  const { env } = preparado({ sesiones: true });
+  const ses = env.hoja('Sesiones');
+  ses.data[1][4] = 'ana@example.com'; // Ana, miércoles 3 p. m.
+  ses.data[1][5] = 2;                  // 2 cupos para probar el límite
+  const d = env.llamar('agendaDatos', '');
+  // Viernes 20 nov (hoy, 10 a. m.) → viernes 7 p. m. con Aleja es la primera
+  assert.equal(d.dias[0].fecha, '2026-11-20');
+  assert.equal(d.dias[0].horarios[0].anfitrion, 'Aleja');
+  assert.equal(d.dias[0].horarios[0].etiqueta, '7:00\u00a0p.\u00a0m.');
+  const mie = d.dias.find((x) => x.fecha === '2026-11-25');
+  assert.deepEqual(Array.from(mie.horarios, (h) => h.anfitrion), ['Ana', 'Leidy y Cristian']);
+  assert.equal(mie.horarios[0].duracion, 60);
+
+  const [maria, juan] = [porNombre(env, 'Maria Perez'), porNombre(env, 'Juan Gómez')];
+  const r1 = env.llamar('agendaReservar', maria.ID, '2026-11-25T15:00:00-05:00', { nombre: 'Maria', correo: 'maria@example.com' });
+  const r2 = env.llamar('agendaReservar', juan.ID, '2026-11-25T15:00:00-05:00', { nombre: 'Juan', correo: 'juan@example.com' });
+  assert.equal(r1.anfitrion, 'Ana');
+  assert.equal(r1.meet, r2.meet, 'mismo Meet para el grupo');
+  assert.equal(env.eventos.size, 1);
+  const ev = [...env.eventos.values()][0];
+  assert.equal(ev.summary, 'Sesión informativa AIESEC · con Ana');
+  assert.deepEqual(ev.attendees.map((a) => a.email).sort(), ['ana@example.com', 'entrevistas@example.com', 'juan@example.com', 'maria@example.com']);
+  assert.equal(env.registro.correos.at(-1).to, 'juan@example.com', 'confirmación propia al que se une');
+  assert.equal(porNombre(env, 'Juan Gómez')['Sesión con'], 'Ana');
+  assert.equal(env.hoja('Agendados').objetos()[0]['Quién la da'], 'Ana');
+  // 2 cupos llenos → la sesión de Ana desaparece
+  const mie2 = env.llamar('agendaDatos', '').dias.find((x) => x.fecha === '2026-11-25');
+  assert.deepEqual(Array.from(mie2.horarios, (h) => h.anfitrion), ['Leidy y Cristian']);
+
+  // Juan cancela: Maria sigue en el evento; luego Maria se pasa a otra sesión y el evento vacío se borra
+  env.llamar('agendaCancelar', juan.ID);
+  assert.equal(env.eventos.size, 1);
+  assert.ok(![...env.eventos.values()][0].attendees.some((a) => a.email === 'juan@example.com'));
+  env.llamar('agendaReservar', maria.ID, '2026-11-25T18:00:00-05:00', { nombre: 'Maria' });
+  assert.equal(env.eventos.size, 1);
+  assert.equal([...env.eventos.values()][0].summary, 'Sesión informativa AIESEC · con Leidy y Cristian');
 });

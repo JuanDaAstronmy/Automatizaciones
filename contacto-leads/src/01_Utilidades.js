@@ -185,6 +185,14 @@ function parseHorario_(texto) {
   return tramos.sort(function (a, b) { return a[0] - b[0]; });
 }
 
+/** "15:00", "3pm", "3:00 p. m." → minutos desde medianoche (o null). */
+function parseHora_(texto) {
+  const m = /^\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.?\s?m\.?|p\.?\s?m\.?)?\s*$/i.exec(String(texto || '').toLowerCase());
+  return m ? aMinutos_(m[1], m[2], m[3]) : null;
+}
+
+const DIAS_NORM = { domingo: 0, lunes: 1, martes: 2, miercoles: 3, jueves: 4, viernes: 5, sabado: 6 };
+
 function aMinutos_(h, mi, ampm) {
   h = Number(h); mi = Number(mi || 0);
   if (ampm) {
@@ -248,7 +256,17 @@ function calcularHorarios_(p) {
     const clave = claveFecha_(y, m, d);
     if (festivos[clave] || bloqueadas.indexOf(clave) >= 0) continue;
     const horarios = [];
-    (p.horario[t.getUTCDay()] || []).forEach(function (tramo) {
+    (p.sesiones || []).forEach(function (se) {
+      if (se.dow !== t.getUTCDay()) return;
+      const s = fechaDesdeLocal_(y, m, d, se.inicioMin, off).getTime();
+      const e = s + se.duracion * MS_MIN;
+      if (s < limite) return;
+      if (bloqueos.some(function (b) { return b.inicio < e && b.fin > s; })) return;
+      const inscritos = reservas.filter(function (r) { return r.inicio === s; }).length;
+      if (inscritos >= se.cupos) return;
+      horarios.push({ inicio: isoConOffset_(new Date(s), off), ms: s, etiqueta: formatearHora_(new Date(s), off), anfitrion: se.anfitrion, duracion: se.duracion, cuposLibres: se.cupos - inscritos });
+    });
+    (p.sesiones && p.sesiones.length ? [] : (p.horario[t.getUTCDay()] || [])).forEach(function (tramo) {
       const finTramo = fechaDesdeLocal_(y, m, d, tramo[1], off).getTime();
       for (let s = fechaDesdeLocal_(y, m, d, tramo[0], off).getTime(); s + dur <= finTramo; s += paso) {
         if (s < limite) continue;
@@ -257,7 +275,7 @@ function calcularHorarios_(p) {
         const ocupados = reservas.filter(function (r) { return r.inicio < e && r.fin > s; }).length;
         if (ocupados >= cupos) continue;
         if (horarios.some(function (h) { return h.ms === s; })) continue;
-        horarios.push({ inicio: isoConOffset_(new Date(s), off), ms: s, etiqueta: formatearHora_(new Date(s), off) });
+        horarios.push({ inicio: isoConOffset_(new Date(s), off), ms: s, etiqueta: formatearHora_(new Date(s), off), anfitrion: '', duracion: p.duracionMin });
       }
     });
     if (!horarios.length) continue;

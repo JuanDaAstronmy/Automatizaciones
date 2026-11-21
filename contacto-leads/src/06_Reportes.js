@@ -45,7 +45,7 @@ function construirResumen_(o) {
     (nuevos.length ? nuevos.length + (nuevos.length === 1 ? ' nuevo agendado' : ' nuevos agendados') : 'sin agendados nuevos');
 
   const e = escaparHtml_;
-  const fechaCorta = function (c) { return formatearDiaCorto_(c.fechaReunion, off) + ' · ' + formatearHora_(c.fechaReunion, off); };
+  const fechaCorta = function (c) { return formatearDiaCorto_(c.fechaReunion, off) + ' · ' + formatearHora_(c.fechaReunion, off) + (c.sesion ? ' · con ' + c.sesion : ''); };
   const boton = function (href, txt, color) {
     return '<a href="' + e(href) + '" style="display:inline-block;padding:4px 10px;border-radius:6px;background:' + (color || '#037ef3') + ';color:#fff;text-decoration:none;font-size:12px;margin:2px 4px 2px 0">' + e(txt) + '</a>';
   };

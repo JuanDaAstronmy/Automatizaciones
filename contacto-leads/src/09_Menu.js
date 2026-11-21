@@ -4,16 +4,25 @@ const MANEJADORES = ['trigResumen', 'trigHorario'];
 
 const MENSAJES_INICIALES = [
   [MSG.PRIMER, '1er mensaje',
-    '¡Hola, {primer_nombre}! 👋 Soy {remitente}, de {organizacion}.\n\nVimos que te registraste en nuestra convocatoria y nos encantaría contarte todos los detalles. 🌍\n\nElige aquí el horario que mejor te quede para una llamada corta por Google Meet:\n{link}\n\n¡Quedo atento/a a cualquier duda!',
-    'Primer mensaje a cada lead. {link} es SU link personal para agendar. Reemplázalo por el tuyo.'],
+    '¡Hola, {primer_nombre}! 👋 ¿Cómo vas?\nSoy {remitente} de AIESEC Colombia. Vi que te interesó vivir una experiencia en el exterior y quería contarte cómo funciona.\n\nCon Voluntario Global puedes viajar a otro país por 6 a 8 semanas, vivir una experiencia intercultural y aportar a un proyecto social conectado con los ODS de la ONU. 🌍\n\nEsta semana tenemos sesiones informativas grupales por Google Meet (puedes invitar a tu familia). Elige la que mejor te quede aquí:\n{link}\n\nY cuéntame: ¿qué es lo que más te llama la atención de irte al exterior? 😊',
+    'Basado en el Mensaje 1 del discurso oGV de Black November. {link} es SU link personal para agendar.'],
   [MSG.SEGUIMIENTO, 'Seguimiento',
-    '¡Hola de nuevo, {primer_nombre}! 😊 Te escribo por si no alcanzaste a ver mi mensaje. Todavía tenemos espacios esta semana para contarte sobre {organizacion}:\n{link}',
+    '¡Hola de nuevo, {primer_nombre}! 😊 Te escribo por si no alcanzaste a ver mi mensaje. Los cupos para las próximas salidas son limitados y el beneficio de Black November tiene fecha límite. Todavía hay espacio en las sesiones informativas de esta semana:\n{link}',
     'Para quienes no respondieron después de 1-2 días.'],
   [MSG.RECORDATORIO, 'Recordatorio',
-    '¡Hola, {primer_nombre}! Te recuerdo nuestra reunión el {fecha_reunion} a las {hora_reunion} (hora Colombia). 🙌\n\nLink de Google Meet: {meet}\n\nSi necesitas cambiar el horario, puedes hacerlo aquí: {link}',
+    '¡Hola, {primer_nombre}! Te recuerdo la sesión informativa de Voluntario Global el {fecha_reunion} a las {hora_reunion} (hora Colombia). 🙌 Si quieres, invita a tu familia.\n\nLink de Google Meet: {meet}\n\nSi necesitas cambiar el horario, puedes hacerlo aquí: {link}',
     'Para el día anterior a la reunión. Sale con un botón en el resumen de las 8 p. m.'],
+  ['RESP_DESPUES_SEMESTRE', 'Más adelante',
+    'Te entiendo, {primer_nombre}, y es válido querer tomarte tu tiempo. Las fechas de salida y los cupos por proyecto son limitados y el beneficio de Black November tiene fecha límite, pero no tienes que viajar ya: puedes asegurar tu proceso ahora y escoger una fecha de salida más adelante. Te cuento todo en la sesión: {link}',
+    'Objeción "hablemos más adelante" (discurso oGV). Confirmen la política de cambio de fecha.'],
+  ['RESP_PAGAR', '¿Por qué pagar?',
+    'Es una duda muy válida. 😊 No pagas por "trabajar gratis": el valor cubre la gestión y el acompañamiento del programa, la preparación antes del viaje, el soporte en el destino y los costos del proyecto. Tú aportas tu tiempo y talento a una comunidad real. En la sesión te mostramos el detalle de lo que incluye: {link}',
+    'Objeción "si es voluntariado, ¿por qué pago?" (discurso oGV). Confirmen qué incluye el valor.'],
+  ['RESP_MIEDO', 'Miedo / seguridad',
+    'Es normal sentir eso y habla bien de ti. No viajas solo/a: AIESEC te acompaña antes, durante y después, tienes contacto en el destino y vives con voluntarios de varios países. Si quieres, tu familia puede entrar a la sesión para resolver sus dudas: {link}',
+    'Objeción de miedo o seguridad (discurso oGV).'],
   ['RESP_QUE_ES', '¿Qué es AIESEC?',
-    'AIESEC es una organización liderada por jóvenes, presente en más de 100 países, que desarrolla liderazgo a través de experiencias de intercambio y voluntariado. 🌎 En la llamada te contamos cómo funciona y qué opciones hay para ti: {link}',
+    'AIESEC es una organización juvenil presente en más de 120 países que conecta a jóvenes de 18 a 30 años con experiencias internacionales para desarrollar su liderazgo y generar impacto social. 🌎 En la sesión te contamos cómo funciona y qué opciones hay para ti: {link}',
     'EJEMPLO de respuesta rápida. Edítala o bórrala. Las claves que empiezan por RESP_ aparecen en "Respuestas" del panel.'],
   ['RESP_COSTO', '¿Tiene costo?',
     'Depende del programa y del destino que elijas. 😊 En la llamada te explicamos los costos, qué incluye cada opción y las facilidades que hay. ¿Agendamos? {link}',
@@ -378,6 +387,27 @@ function sembrarMensajes_(sh) {
   sh.getRange(2, 1, Math.max(sh.getMaxRows() - 1, 1), 4).setWrap(true).setVerticalAlignment('top');
 }
 
+function sembrarSesiones_(sh) {
+  const tabla = leerTabla_(sh);
+  sh.getRange(1, 2, sh.getMaxRows(), 1).setNumberFormat('@');
+  if (!tabla.filas.some(function (f) { return String(f['Día'] || '').trim(); })) {
+    agregarFilas_(tabla, SESIONES_INICIALES.map(function (s) {
+      const o = {};
+      COLUMNAS_SESIONES.forEach(function (c, i) { o[c] = s[i]; });
+      return o;
+    }));
+  }
+  const t = leerTabla_(sh);
+  formatoColumna_(sh, t, 'Día', function (r) {
+    r.setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'], true).build());
+  });
+  formatoColumna_(sh, t, 'Activa', function (r) {
+    r.setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['SI', 'NO'], true).build());
+  });
+  sh.setColumnWidth(1, 110); sh.setColumnWidth(4, 160); sh.setColumnWidth(5, 320);
+  sh.getRange(1, 1).setNote('Sesiones fijas y grupales. Si hay al menos una fila activa, se usan estas en vez de los horarios por día de Config. Hora en formato 24 h (15:00) o 3:00 pm. En "Correos" pon el correo de quien la da (separa varios con coma): le llega la invitación con el Meet.');
+}
+
 function asegurarCalendario_() {
   const p = props_();
   const cfg = getConfig_();
@@ -445,6 +475,8 @@ function configurarTodo_() {
   const shA = prepararPestana_(HOJAS.AGENDADOS, COLUMNAS_AGENDADOS);
   const shI = prepararPestana_(HOJAS.IMPORTAR, null);
   const shM = prepararPestana_(HOJAS.MENSAJES, COLUMNAS_MENSAJES);
+  const shS = prepararPestana_(HOJAS.SESIONES, COLUMNAS_SESIONES);
+  sembrarSesiones_(shS);
   const shCfg = prepararPestana_(HOJAS.CONFIG, ['Parámetro', 'Valor', 'Ayuda']);
   const shR = prepararPestana_(HOJAS.REGISTRO, COLUMNAS_REGISTRO);
 
@@ -466,7 +498,7 @@ function configurarTodo_() {
   const horas = crearTriggers_();
   if (urlWeb_()) refrescarLinks_();
   escribirInicio_();
-  [HOJAS.INICIO, HOJAS.CONTACTOS, HOJAS.AGENDADOS, HOJAS.IMPORTAR, HOJAS.MENSAJES, HOJAS.CONFIG, HOJAS.REGISTRO].forEach(function (n, i) {
+  [HOJAS.INICIO, HOJAS.CONTACTOS, HOJAS.AGENDADOS, HOJAS.SESIONES, HOJAS.IMPORTAR, HOJAS.MENSAJES, HOJAS.CONFIG, HOJAS.REGISTRO].forEach(function (n, i) {
     const s = ss.getSheetByName(n);
     if (s) { ss.setActiveSheet(s); ss.moveActiveSheet(i + 1); }
   });

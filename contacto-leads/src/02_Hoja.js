@@ -95,6 +95,7 @@ function aContacto_(f) {
     notas: String(f[COL.NOTAS] || ''),
     origen: String(f[COL.ORIGEN] || ''),
     eventoId: String(f[COL.EVENTO_ID] || '').trim(),
+    sesion: String(f[COL.SESION] || '').trim(),
     creado: esFecha_(f[COL.CREADO]) ? f[COL.CREADO] : null,
   };
 }

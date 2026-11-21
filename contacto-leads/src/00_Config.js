@@ -13,6 +13,7 @@ const VERSION = '1.0.0';
 const HOJAS = {
   INICIO: 'Inicio',
   CONTACTOS: 'Contactos',
+  SESIONES: 'Sesiones',
   AGENDADOS: 'Agendados',
   IMPORTAR: 'Importar',
   MENSAJES: 'Mensajes',
@@ -38,12 +39,13 @@ const COL = {
   LINK_AGENDA: 'Link para agendar',
   INFO_EXTRA: 'Info del formulario',
   CREADO: 'Creado',
+  SESION: 'Sesión con',
   EVENTO_ID: 'Evento (técnico)',
 };
 
 const COLUMNAS_CONTACTOS = [
   COL.ID, COL.NOMBRE, COL.TELEFONO, COL.CORREO, COL.ESTADO, COL.RESPONSABLE,
-  COL.INTENTOS, COL.ULTIMO_CONTACTO, COL.FECHA_REUNION, COL.LINK_REUNION,
+  COL.INTENTOS, COL.ULTIMO_CONTACTO, COL.FECHA_REUNION, COL.SESION, COL.LINK_REUNION,
   COL.AGENDADO_EL, COL.NOTAS, COL.ORIGEN, COL.LINK_AGENDA, COL.INFO_EXTRA,
   COL.CREADO, COL.EVENTO_ID,
 ];
@@ -52,6 +54,7 @@ const COLUMNAS_CONTACTOS = [
 const COLA = {
   ID: 'ID',
   REUNION: 'Reunión',
+  SESION: 'Quién la da',
   NOMBRE: 'Nombre',
   TELEFONO: 'Teléfono',
   CORREO: 'Correo',
@@ -63,10 +66,23 @@ const COLA = {
   NOTAS: 'Notas de la entrevista',
 };
 const COLUMNAS_AGENDADOS = [
-  COLA.REUNION, COLA.NOMBRE, COLA.TELEFONO, COLA.CORREO, COLA.LINK, COLA.RESPONSABLE,
+  COLA.REUNION, COLA.SESION, COLA.NOMBRE, COLA.TELEFONO, COLA.CORREO, COLA.LINK, COLA.RESPONSABLE,
   COLA.ESTADO, COLA.RESULTADO, COLA.NOTAS, COLA.AGENDADO_EL, COLA.ID,
 ];
 const RESULTADOS = ['Asistió', 'No asistió', 'Reprogramar'];
+
+/**
+ * Pestaña Sesiones (opcional): sesiones fijas y grupales, cada una con quien la da.
+ * Si tiene al menos una fila activa, reemplaza los "Horario lunes…domingo" de Config.
+ */
+const COLUMNAS_SESIONES = ['Día', 'Hora', 'Duración (min)', 'Quién la da', 'Correos de quien la da', 'Cupos', 'Activa'];
+const SESIONES_INICIALES = [
+  ['Miércoles', '15:00', 60, 'Ana', '', 15, 'SI'],
+  ['Jueves', '15:00', 60, 'Ana', '', 15, 'SI'],
+  ['Viernes', '19:00', 60, 'Aleja', '', 15, 'SI'],
+  ['Sábado', '09:00', 60, 'Aleja', '', 15, 'SI'],
+  ['Miércoles', '18:00', 60, 'Leidy y Cristian', '', 15, 'SI'],
+];
 
 const COLUMNAS_REGISTRO = ['Fecha', 'Acción', 'ID', 'Nombre', 'Detalle', 'Por'];
 const COLUMNAS_MENSAJES = ['Clave', 'Nombre del botón', 'Texto', 'Para qué sirve'];
@@ -108,13 +124,13 @@ const MSG = {
  */
 const DEF_CONFIG = [
   { k: 'ORG', tipo: 'texto', def: 'AIESEC', etiqueta: 'Nombre de la organización', ayuda: 'Aparece en la página de agendamiento y en los mensajes ({organizacion}).' },
-  { k: 'TIPO_REUNION', tipo: 'texto', def: 'Entrevista AIESEC', etiqueta: 'Nombre de la reunión', ayuda: 'Título de la página y del evento en el calendario.' },
-  { k: 'DESCRIPCION', tipo: 'texto', def: 'Una llamada corta por Google Meet para conocerte y resolver tus dudas sobre el programa.', etiqueta: 'Descripción para el aplicante', ayuda: 'Texto corto que ve el aplicante al abrir su link.' },
+  { k: 'TIPO_REUNION', tipo: 'texto', def: 'Sesión informativa AIESEC', etiqueta: 'Nombre de la reunión', ayuda: 'Título de la página y del evento en el calendario.' },
+  { k: 'DESCRIPCION', tipo: 'texto', def: 'Una sesión grupal por Google Meet para contarte cómo funciona Voluntario Global, los proyectos y el beneficio de Black November, y resolver tus dudas. Puedes invitar a tu familia.', etiqueta: 'Descripción para el aplicante', ayuda: 'Texto corto que ve el aplicante al abrir su link.' },
   { k: 'URL_WEB', tipo: 'texto', def: '', etiqueta: 'URL de la app web', ayuda: 'Pega aquí la URL que termina en /exec (Implementar → Nueva implementación → App web).' },
   { k: 'EQUIPO', tipo: 'texto', def: '', etiqueta: 'Nombres del equipo', ayuda: 'Separados por coma. Aparecen en el panel para elegir "¿Quién eres?" y llenan {remitente}.' },
   { k: 'CORREOS_REPORTE', tipo: 'texto', def: '', etiqueta: 'Correos que reciben el resumen', ayuda: 'Separados por coma. Reciben el resumen de las 12:00 y las 20:00.' },
   { k: 'CORREOS_INVITADOS', tipo: 'texto', def: '', etiqueta: 'Correos invitados a cada reunión', ayuda: 'Separados por coma. Quienes harán las entrevistas: les llega la invitación con el Meet.' },
-  { k: 'DURACION', tipo: 'num', def: 30, etiqueta: 'Duración de la reunión (minutos)', ayuda: '' },
+  { k: 'DURACION', tipo: 'num', def: 60, etiqueta: 'Duración de la reunión (minutos)', ayuda: '' },
   { k: 'PASO', tipo: 'num', def: 30, etiqueta: 'Cada cuántos minutos empieza un horario', ayuda: 'Ej.: 30 → 9:00, 9:30, 10:00…' },
   { k: 'CUPOS', tipo: 'num', def: 1, etiqueta: 'Reuniones a la misma hora', ayuda: 'Pon 2 si dos personas del equipo pueden entrevistar en paralelo.' },
   { k: 'ANTICIPACION', tipo: 'num', def: 3, etiqueta: 'Anticipación mínima para agendar (horas)', ayuda: 'Evita que alguien agende para dentro de 10 minutos.' },
