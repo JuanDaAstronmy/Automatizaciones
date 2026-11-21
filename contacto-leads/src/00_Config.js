@@ -75,13 +75,13 @@ const RESULTADOS = ['Asistió', 'No asistió', 'Reprogramar'];
  * Pestaña Sesiones (opcional): sesiones fijas y grupales, cada una con quien la da.
  * Si tiene al menos una fila activa, reemplaza los "Horario lunes…domingo" de Config.
  */
-const COLUMNAS_SESIONES = ['Día', 'Hora', 'Duración (min)', 'Quién la da', 'Correos de quien la da', 'Cupos', 'Activa'];
+const COLUMNAS_SESIONES = ['Día', 'Hora', 'Duración (min)', 'Quién la da', 'Correos de quien la da', 'Cupos', 'Activa', 'Programa'];
 const SESIONES_INICIALES = [
-  ['Miércoles', '15:00', 60, 'Ana', '', 15, 'SI'],
-  ['Jueves', '15:00', 60, 'Ana', '', 15, 'SI'],
-  ['Viernes', '19:00', 60, 'Aleja', '', 15, 'SI'],
-  ['Sábado', '09:00', 60, 'Aleja', '', 15, 'SI'],
-  ['Miércoles', '18:00', 60, 'Leidy y Cristian', '', 15, 'SI'],
+  ['Miércoles', '15:00', 60, 'Ana', '', 15, 'SI', 'GV'],
+  ['Jueves', '15:00', 60, 'Ana', '', 15, 'SI', 'GV'],
+  ['Viernes', '19:00', 60, 'Aleja', '', 15, 'SI', 'GT'],
+  ['Sábado', '09:00', 60, 'Aleja', '', 15, 'SI', 'GT'],
+  ['Miércoles', '18:00', 60, 'Leidy y Cristian', '', 15, 'SI', 'GT'],
 ];
 
 const COLUMNAS_REGISTRO = ['Fecha', 'Acción', 'ID', 'Nombre', 'Detalle', 'Por'];

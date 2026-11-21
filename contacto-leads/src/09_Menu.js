@@ -429,6 +429,9 @@ function sembrarSesiones_(sh) {
   formatoColumna_(sh, t, 'Día', function (r) {
     r.setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'], true).build());
   });
+  formatoColumna_(sh, t, 'Programa', function (r) {
+    r.setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['GV', 'GT', 'Todos'], true).build());
+  });
   formatoColumna_(sh, t, 'Activa', function (r) {
     r.setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['SI', 'NO'], true).build());
   });

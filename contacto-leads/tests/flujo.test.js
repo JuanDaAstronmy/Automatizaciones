@@ -354,9 +354,9 @@ test('Sesiones grupales: cada persona tiene su horario y todos entran al mismo M
   env.llamar('agendaCancelar', juan.ID);
   assert.equal(env.eventos.size, 1);
   assert.ok(![...env.eventos.values()][0].attendees.some((a) => a.email === 'juan@example.com'));
-  env.llamar('agendaReservar', maria.ID, '2026-11-25T18:00:00-05:00', { nombre: 'Maria' });
+  env.llamar('agendaReservar', maria.ID, '2026-11-26T15:00:00-05:00', { nombre: 'Maria' });
   assert.equal(env.eventos.size, 1);
-  assert.match([...env.eventos.values()][0].description, /Leidy y Cristian/);
+  assert.equal([...env.eventos.values()][0].start.dateTime, '2026-11-26T15:00:00-05:00');
 });
 
 test('Leads de oGT se marcan como GT para usar sus mensajes; los links conservan emojis', () => {
@@ -381,4 +381,15 @@ test('Una copia de la hoja en otra cuenta arranca con su propio calendario, clav
   assert.ok(env.props.get('ID_CALENDARIO'), 'busca o crea el calendario en la cuenta nueva');
   assert.equal(env.hoja('Config').data.find((f) => f[0] === 'URL de la app web')[1], '', 'hay que pegar la URL nueva');
   assert.equal(env.hoja('Contactos').objetos().length, 3, 'los contactos se conservan');
+});
+
+test('Cada lead solo ve las sesiones de su programa (GV: Ana · GT: Aleja, Leidy y Cristian)', () => {
+  const { env } = preparado({ sesiones: true });
+  env.hoja('Importar').data = [['Nombre', 'Teléfono', 'Programa'], ['Paul Royero', '3003151688', 'Talento (GT)']];
+  env.llamar('importarPestanaImportar_');
+  const anf = (id) => new Set(env.llamar('agendaDatos', id).dias.flatMap((d) => Array.from(d.horarios, (h) => h.anfitrion)));
+  assert.deepEqual([...anf(porNombre(env, 'Maria Perez').ID)], ['Ana']);
+  assert.deepEqual([...anf(porNombre(env, 'Paul Royero').ID)].sort(), ['Aleja', 'Leidy y Cristian']);
+  // Un lead de GV no puede tomar una sesión de GT aunque mande la hora a mano
+  assert.equal(env.llamar('agendaReservar', porNombre(env, 'Maria Perez').ID, '2026-11-25T18:00:00-05:00', {}).ok, false);
 });

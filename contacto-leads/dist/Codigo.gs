@@ -78,13 +78,13 @@ const RESULTADOS = ['Asistió', 'No asistió', 'Reprogramar'];
  * Pestaña Sesiones (opcional): sesiones fijas y grupales, cada una con quien la da.
  * Si tiene al menos una fila activa, reemplaza los "Horario lunes…domingo" de Config.
  */
-const COLUMNAS_SESIONES = ['Día', 'Hora', 'Duración (min)', 'Quién la da', 'Correos de quien la da', 'Cupos', 'Activa'];
+const COLUMNAS_SESIONES = ['Día', 'Hora', 'Duración (min)', 'Quién la da', 'Correos de quien la da', 'Cupos', 'Activa', 'Programa'];
 const SESIONES_INICIALES = [
-  ['Miércoles', '15:00', 60, 'Ana', '', 15, 'SI'],
-  ['Jueves', '15:00', 60, 'Ana', '', 15, 'SI'],
-  ['Viernes', '19:00', 60, 'Aleja', '', 15, 'SI'],
-  ['Sábado', '09:00', 60, 'Aleja', '', 15, 'SI'],
-  ['Miércoles', '18:00', 60, 'Leidy y Cristian', '', 15, 'SI'],
+  ['Miércoles', '15:00', 60, 'Ana', '', 15, 'SI', 'GV'],
+  ['Jueves', '15:00', 60, 'Ana', '', 15, 'SI', 'GV'],
+  ['Viernes', '19:00', 60, 'Aleja', '', 15, 'SI', 'GT'],
+  ['Sábado', '09:00', 60, 'Aleja', '', 15, 'SI', 'GT'],
+  ['Miércoles', '18:00', 60, 'Leidy y Cristian', '', 15, 'SI', 'GT'],
 ];
 
 const COLUMNAS_REGISTRO = ['Fecha', 'Acción', 'ID', 'Nombre', 'Detalle', 'Por'];
@@ -884,6 +884,7 @@ function leerSesiones_() {
       correos: listaCorreos_(f['Correos de quien la da']),
       cupos: Math.max(1, Math.floor(Number(f['Cupos']) || cfg.CUPOS)),
       activa: activa === '' || siNo_(activa),
+      programa: /GT/i.test(String(f['Programa'] || '')) ? 'GT' : /GV/i.test(String(f['Programa'] || '')) ? 'GV' : '',
     };
   }).filter(function (s) { return s.activa && s.dow !== undefined && s.inicioMin !== null && s.anfitrion; });
 }
@@ -920,7 +921,8 @@ function eventosEnRango_(calId, desde, hasta) {
 }
 
 /** Horarios libres considerando: horario semanal, festivos, reservas, bloqueos y (opcional) tu calendario personal. */
-function horariosDisponibles_(ahora) {
+/** programa: 'GV' | 'GT' para mostrar solo las sesiones de ese programa (vacío = todas). */
+function horariosDisponibles_(ahora, programa) {
   const cfg = getConfig_();
   const off = offsetMinutos_(ahora);
   const desde = new Date(ahora.getTime() - MS_DIA);
@@ -952,7 +954,7 @@ function horariosDisponibles_(ahora) {
   return calcularHorarios_({
     ahora: ahora, offMin: off, horario: horarioSemanal_(cfg), duracionMin: cfg.DURACION, pasoMin: cfg.PASO,
     anticipacionMin: cfg.ANTICIPACION * 60, dias: cfg.DIAS, cupos: cfg.CUPOS, reservas: reservas, bloqueos: bloqueos,
-    festivos: festivos, fechasBloqueadas: listaTexto_(cfg.FECHAS_BLOQUEADAS), sesiones: leerSesiones_(),
+    festivos: festivos, fechasBloqueadas: listaTexto_(cfg.FECHAS_BLOQUEADAS), sesiones: leerSesiones_().filter(function (s) { return !programa || !s.programa || s.programa === programa; }),
   });
 }
 
@@ -1134,6 +1136,7 @@ function respuestaContacto_(c) {
     nombre: c.nombre,
     primerNombre: c.primerNombre,
     correo: c.correo,
+    programa: c.programa,
     reserva: c.estado === ESTADO.AGENDADO && c.fechaReunion && c.fechaReunion.getTime() > Date.now() ? {
       inicio: isoConOffset_(c.fechaReunion, off),
       dia: formatearDia_(c.fechaReunion, off),
@@ -1165,7 +1168,7 @@ function agendaDatos(id) {
     duracion: cfg.DURACION,
     contacto: contacto,
     pideTelefono: !contacto,
-    dias: horariosDisponibles_(new Date()),
+    dias: horariosDisponibles_(new Date(), contacto ? contacto.programa : ''),
   };
 }
 
@@ -1198,7 +1201,7 @@ function agendaReservar(id, inicioISO, datos) {
     if (isNaN(inicio.getTime())) throw new Error('Elige un horario.');
     const ahora = new Date();
     let slot = null;
-    horariosDisponibles_(ahora).forEach(function (d) {
+    horariosDisponibles_(ahora, contacto ? contacto.programa : '').forEach(function (d) {
       d.horarios.forEach(function (h) { if (h.ms === inicio.getTime()) slot = h; });
     });
     if (!slot) return { ok: false, ocupado: true, mensaje: 'Ese horario se acaba de ocupar 😕 Elige otro, por favor.' };
@@ -2300,6 +2303,9 @@ function sembrarSesiones_(sh) {
   const t = leerTabla_(sh);
   formatoColumna_(sh, t, 'Día', function (r) {
     r.setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'], true).build());
+  });
+  formatoColumna_(sh, t, 'Programa', function (r) {
+    r.setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['GV', 'GT', 'Todos'], true).build());
   });
   formatoColumna_(sh, t, 'Activa', function (r) {
     r.setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['SI', 'NO'], true).build());
