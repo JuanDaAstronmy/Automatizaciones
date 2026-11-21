@@ -37,6 +37,7 @@ function valoresMC_(c, offMin) {
   const intentos = c.intentos || 0;
   return {
     whatsapp: intentos >= 1 || (c.estado !== ESTADO.PENDIENTE),
+    email: !!c.correoEnviado,
     fup: [intentos >= 2, intentos >= 3, intentos >= 4],
     fecha: c.ultimoContacto ? Utilities.formatDate(c.ultimoContacto, zona_(), 'dd/MM') : '',
     estado: ESTADO_MC[c.estado] || '',
@@ -62,7 +63,7 @@ function sincronizarMC_() {
   const col = {};
   vals[h].forEach(function (v, i) { const n = normalizarTexto_(v); if (n && !(n in col)) col[n] = i; });
   const C = {
-    whatsapp: col['contacto_whatsapp'], fup: [col['fup1'], col['fup2'], col['fup3']],
+    whatsapp: col['contacto_whatsapp'], email: col['contacto_email'], fup: [col['fup1'], col['fup2'], col['fup3']],
     por: col['recontactado_por'], fecha: col['fecha_de_recontacto'], estado: col['status_actual'], comentario: col['comentario_actual'],
   };
 
@@ -86,12 +87,14 @@ function sincronizarMC_() {
   };
 
   leerContactos_().forEach(function (c) {
-    if (c.estado === ESTADO.PENDIENTE && !c.intentos) return;
+    if (c.estado === ESTADO.PENDIENTE && !c.intentos && !c.correoEnviado) return;
     const r = indice[ultimos10_(c.telefono)];
     if (r === undefined) { res.noEncontrados++; return; }
     const v = valoresMC_(c, off);
     let cambio = false;
     if (v.whatsapp) cambio = poner(r, C.whatsapp, true) || cambio;
+    if (v.email) cambio = poner(r, C.email, true) || cambio;
+    if (c.estado === ESTADO.PENDIENTE && !c.intentos) { if (cambio) res.actualizados++; else res.sinCambios++; return; }
     v.fup.forEach(function (marcar, i) { if (marcar) cambio = poner(r, C.fup[i], true) || cambio; });
     cambio = poner(r, C.fecha, v.fecha) || cambio;
     const estadoActual = normalizarTexto_(vals[r][C.estado]);

@@ -424,6 +424,7 @@ test('Sincroniza el avance con la hoja MC, solo en filas propias y con teléfono
   const r = env.llamar('sincronizarMC_');
   const h = mc.hoja('Campaña Recontacto').data;
   assert.equal(h[2][12], true, 'Contacto Whatsapp');
+  assert.equal(h[2][11], false, 'aún sin correo');
   assert.equal(h[2][14], true, 'FUP1 por el seguimiento');
   assert.equal(h[2][15], false);
   assert.equal(h[2][18], '20/11');
@@ -433,6 +434,10 @@ test('Sincroniza el avance con la hoja MC, solo en filas propias y con teléfono
   assert.equal(h[3][19], '');
   assert.equal(r.noEncontrados, 1, 'Juan no está a mi nombre');
   assert.equal(env.llamar('sincronizarMC_').actualizados, 0, 'la segunda vez no reescribe nada');
+  // Cuando se le envía el correo masivo, se marca "Contacto email"
+  const sh = env.hoja('Contactos'); sh.data[1][sh.data[0].indexOf('Correo enviado')] = new Date();
+  env.llamar('sincronizarMC_');
+  assert.equal(h[2][11], true, 'Contacto email');
 });
 
 test('Correo masivo: personaliza [Nombre], filtra por programa, no repite y respeta el cupo', () => {
