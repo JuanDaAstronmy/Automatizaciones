@@ -401,3 +401,36 @@ test('Enviar un mensaje "No cumple" marca al lead como No cumple', () => {
   assert.equal(env.llamar('panelRegistrarEnvio', clave, id, 'RESP_NOCUMPLE_EDAD_MAYOR', 'Juan David').estado, 'No cumple');
   assert.ok(env.hoja('Mensajes').objetos().some((m) => m.Clave === 'RESP_CUMPLE'));
 });
+
+test('Sincroniza el avance con la hoja MC, solo en filas propias y con teléfono coincidente', () => {
+  const { env } = preparado();
+  const enc = ['Fecha', 'Plataform', 'CREATIVO', 'Numero', 'Nombre', 'Email', 'Ciudad', 'Carrera', 'Programa', 'Último Status', 'Comentarios Antiguos',
+    'Contacto email', 'Contacto Whatsapp', 'Contacto llamada', 'FUP1', 'FUP2', 'FUP3', 'Recontactado Por', 'Fecha de Recontacto', 'STATUS ACTUAL', 'COMENTÁRIO ACTUAL'];
+  const fila = (nombre, tel, por, estado) => ['5/11/26', 'fb', 'AD3', nombre, tel, '', '', '', 'GV', '', '', false, false, false, false, false, false, por, '', estado || '', ''];
+  const mc = env.nuevaFuente('https://docs.google.com/spreadsheets/d/MC/edit', [
+    Array(21).fill('').map((v, i) => (i === 14 ? 'Follow Up' : '')), enc,
+    fila('Maria Perez', '+573001112233', 'Juan David'),
+    fila('Juan Gómez', '+573104445566', 'Mila'),                    // de otra persona: no se toca
+    fila('Fijo Raro', '6041234567', 'Juan David', 'Aplicante'),
+  ], 'Campaña Recontacto');
+  env.config('Hoja de seguimiento MC (URL)', 'https://docs.google.com/spreadsheets/d/MC/edit');
+  env.config('Mi nombre en la hoja MC', 'Juan David');
+  const clave = env.props.get('CLAVE_PANEL');
+  const [maria, juan] = [porNombre(env, 'Maria Perez'), porNombre(env, 'Juan Gómez')];
+  env.llamar('panelRegistrarEnvio', clave, maria.ID, 'PRIMER_CONTACTO', 'Juan David');
+  env.llamar('panelRegistrarEnvio', clave, maria.ID, 'SEGUIMIENTO', 'Juan David');
+  env.llamar('panelRegistrarEnvio', clave, juan.ID, 'PRIMER_CONTACTO', 'Juan David');
+  env.llamar('agendaReservar', maria.ID, '2026-11-23T09:00:00-05:00', { nombre: 'Maria' });
+  const r = env.llamar('sincronizarMC_');
+  const h = mc.hoja('Campaña Recontacto').data;
+  assert.equal(h[2][12], true, 'Contacto Whatsapp');
+  assert.equal(h[2][14], true, 'FUP1 por el seguimiento');
+  assert.equal(h[2][15], false);
+  assert.equal(h[2][18], '20/11');
+  assert.equal(h[2][19], 'EPM Agendada');
+  assert.match(h[2][20], /Sesión: lun 23 nov 9:00 a\. m\./);
+  assert.equal(h[3][12], false, 'fila de otra persona intacta');
+  assert.equal(h[3][19], '');
+  assert.equal(r.noEncontrados, 1, 'Juan no está a mi nombre');
+  assert.equal(env.llamar('sincronizarMC_').actualizados, 0, 'la segunda vez no reescribe nada');
+});

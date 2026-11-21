@@ -75,6 +75,7 @@ function onOpen() {
     .addSeparator()
     .addItem('📥 Importar leads de la pestaña "Importar"', 'menuImportar')
     .addItem('📨 Enviar el resumen ahora', 'menuResumen')
+    .addItem('🔄 Actualizar la hoja MC ahora', 'menuSincronizarMC')
     .addItem('🔑 Cambiar la clave del panel', 'menuNuevaClave')
     .addSeparator()
     .addSubMenu(ui.createMenu('🔔 Avisos por Telegram (opcional)')
@@ -176,6 +177,14 @@ function menuResumen() {
   ui.alert('📨 Resumen enviado', (correos.length ? 'Correo a: ' + correos.join(', ') : 'No hay correos en Config → "Correos que reciben el resumen".') +
     (props_().getProperty('TELEGRAM_CHAT_ID') ? '\nTambién por Telegram.' : '') +
     '\n\nNuevos agendados: ' + r.nuevos + ' · Reuniones hoy/mañana: ' + r.proximas, ui.ButtonSet.OK);
+}
+
+function menuSincronizarMC() {
+  const ui = uiHoja_();
+  if (!getConfig_().MC_URL) { ui.alert('Pega primero la URL en Config → "Hoja de seguimiento MC (URL)".'); return; }
+  const r = sincronizarMC_();
+  ui.alert('🔄 Hoja MC actualizada', r.actualizados + ' filas actualizadas · ' + r.sinCambios + ' sin cambios' +
+    (r.noEncontrados ? '\n' + r.noEncontrados + ' contactos no aparecen a tu nombre en la hoja MC (revisa "Mi nombre en la hoja MC").' : ''), ui.ButtonSet.OK);
 }
 
 function menuNuevaClave() {
@@ -282,6 +291,9 @@ function trigHorario(e) {
   try { importarPestanaImportar_(); } catch (err) { console.warn('Importar: ' + err); }
   if (cfg.FUENTE_URL) {
     try { importarDesdeFuente_(); } catch (err) { console.warn('Fuente externa: ' + err); }
+  }
+  if (cfg.MC_URL) {
+    try { sincronizarMC_(); } catch (err) { console.warn('Hoja MC: ' + err); }
   }
   if (cfg.MODO_WA === 'API' && cfg.AUTO_API && waListo_(waConfig_())) {
     const r = envioMasivoAPI_(100);

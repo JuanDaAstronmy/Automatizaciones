@@ -270,9 +270,9 @@ function crearEntorno(opciones = {}) {
     /** Llama una función global como si fuera una ejecución nueva. */
     llamar(nombre, ...args) { env.nuevaEjecucion(); return ctx[nombre](...args); },
     hoja: (n) => libro.hoja(n),
-    nuevaFuente(url, filas) {
+    nuevaFuente(url, filas, pestana) {
       const ss = new FakeSpreadsheet('FUENTE');
-      const sh = ss.insertSheet('Respuestas');
+      const sh = ss.insertSheet(pestana || 'Respuestas');
       sh.getRange(1, 1, filas.length, filas[0].length).setValues(filas);
       fuentes[url] = ss;
       return ss;
