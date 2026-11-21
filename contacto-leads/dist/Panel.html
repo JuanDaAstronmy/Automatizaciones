@@ -72,13 +72,13 @@
 <div id="capa"></div>
 
 <script>
-  var COLORES = { 'Pendiente': '#fff4ce', 'Contactado': '#dbeafe', 'Respondió': '#ede9fe', 'Agendado': '#d1fae5', 'Asistió': '#a7f3d0', 'No asistió': '#fde2e1', 'No interesado': '#e5e7eb', 'Número inválido': '#fecaca' };
+  var COLORES = { 'Pendiente': '#fff4ce', 'Contactado': '#dbeafe', 'Respondió': '#ede9fe', 'Agendado': '#d1fae5', 'Asistió': '#a7f3d0', 'No asistió': '#fde2e1', 'No interesado': '#e5e7eb', 'No cumple': '#fde68a', 'Número inválido': '#fecaca' };
   var FILTROS = [
     { k: 'pend', t: 'Por contactar', e: ['Pendiente'] },
     { k: 'cont', t: 'Contactados', e: ['Contactado'] },
     { k: 'resp', t: 'Respondieron', e: ['Respondió'] },
     { k: 'agen', t: 'Agendados', e: ['Agendado'] },
-    { k: 'otros', t: 'Cerrados', e: ['Asistió', 'No asistió', 'No interesado', 'Número inválido'] },
+    { k: 'otros', t: 'Cerrados', e: ['Asistió', 'No asistió', 'No interesado', 'No cumple', 'Número inválido'] },
     { k: 'todos', t: 'Todos', e: null }
   ];
   var S = { clave: '', d: null, filtro: 'pend', q: '', mios: false, quien: '', cargadoEn: 0, rapido: null };

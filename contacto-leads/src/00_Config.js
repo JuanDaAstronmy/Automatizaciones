@@ -95,6 +95,7 @@ const ESTADO = {
   ASISTIO: 'Asistió',
   NO_ASISTIO: 'No asistió',
   NO_INTERESADO: 'No interesado',
+  NO_CUMPLE: 'No cumple',
   INVALIDO: 'Número inválido',
 };
 const LISTA_ESTADOS = Object.keys(ESTADO).map(function (k) { return ESTADO[k]; });
@@ -107,6 +108,7 @@ const COLOR_ESTADO = {
   'Asistió': '#a7f3d0',
   'No asistió': '#fde2e1',
   'No interesado': '#e5e7eb',
+  'No cumple': '#fde68a',
   'Número inválido': '#fecaca',
 };
 
@@ -116,6 +118,7 @@ const MSG = {
   SEGUIMIENTO: 'SEGUIMIENTO',
   RECORDATORIO: 'RECORDATORIO',
   PREFIJO_RESPUESTA: 'RESP_',
+  PREFIJO_NO_CUMPLE: 'RESP_NOCUMPLE_',
 };
 
 /**

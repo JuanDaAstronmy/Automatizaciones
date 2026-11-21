@@ -393,3 +393,11 @@ test('Cada lead solo ve las sesiones de su programa (GV: Ana · GT: Aleja, Leidy
   // Un lead de GV no puede tomar una sesión de GT aunque mande la hora a mano
   assert.equal(env.llamar('agendaReservar', porNombre(env, 'Maria Perez').ID, '2026-11-25T18:00:00-05:00', {}).ok, false);
 });
+
+test('Enviar un mensaje "No cumple" marca al lead como No cumple', () => {
+  const { env } = preparado();
+  const clave = env.props.get('CLAVE_PANEL');
+  const id = porNombre(env, 'Juan Gómez').ID;
+  assert.equal(env.llamar('panelRegistrarEnvio', clave, id, 'RESP_NOCUMPLE_EDAD', 'Juan David').estado, 'No cumple');
+  assert.ok(env.hoja('Mensajes').objetos().some((m) => m.Clave === 'RESP_CUMPLE'));
+});

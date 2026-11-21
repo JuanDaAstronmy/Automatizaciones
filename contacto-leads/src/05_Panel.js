@@ -91,7 +91,9 @@ function panelRegistrarEnvio(clave, id, claveMensaje, remitente) {
     cambios[COL.ULTIMO_CONTACTO] = new Date();
     if (esIntento) cambios[COL.INTENTOS] = c.intentos + 1;
     if (c.estado === ESTADO.PENDIENTE && esIntento) cambios[COL.ESTADO] = ESTADO.CONTACTADO;
-    if (claveMensaje.indexOf(MSG.PREFIJO_RESPUESTA) === 0 && (c.estado === ESTADO.PENDIENTE || c.estado === ESTADO.CONTACTADO)) {
+    if (claveMensaje.indexOf(MSG.PREFIJO_NO_CUMPLE) === 0 && c.estado !== ESTADO.AGENDADO) {
+      cambios[COL.ESTADO] = ESTADO.NO_CUMPLE;
+    } else if (claveMensaje.indexOf(MSG.PREFIJO_RESPUESTA) === 0 && (c.estado === ESTADO.PENDIENTE || c.estado === ESTADO.CONTACTADO)) {
       cambios[COL.ESTADO] = ESTADO.RESPONDIO;
     }
     if (!c.responsable && remitente) cambios[COL.RESPONSABLE] = remitente;

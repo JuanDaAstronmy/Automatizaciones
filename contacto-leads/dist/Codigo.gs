@@ -98,6 +98,7 @@ const ESTADO = {
   ASISTIO: 'Asistió',
   NO_ASISTIO: 'No asistió',
   NO_INTERESADO: 'No interesado',
+  NO_CUMPLE: 'No cumple',
   INVALIDO: 'Número inválido',
 };
 const LISTA_ESTADOS = Object.keys(ESTADO).map(function (k) { return ESTADO[k]; });
@@ -110,6 +111,7 @@ const COLOR_ESTADO = {
   'Asistió': '#a7f3d0',
   'No asistió': '#fde2e1',
   'No interesado': '#e5e7eb',
+  'No cumple': '#fde68a',
   'Número inválido': '#fecaca',
 };
 
@@ -119,6 +121,7 @@ const MSG = {
   SEGUIMIENTO: 'SEGUIMIENTO',
   RECORDATORIO: 'RECORDATORIO',
   PREFIJO_RESPUESTA: 'RESP_',
+  PREFIJO_NO_CUMPLE: 'RESP_NOCUMPLE_',
 };
 
 /**
@@ -1401,7 +1404,9 @@ function panelRegistrarEnvio(clave, id, claveMensaje, remitente) {
     cambios[COL.ULTIMO_CONTACTO] = new Date();
     if (esIntento) cambios[COL.INTENTOS] = c.intentos + 1;
     if (c.estado === ESTADO.PENDIENTE && esIntento) cambios[COL.ESTADO] = ESTADO.CONTACTADO;
-    if (claveMensaje.indexOf(MSG.PREFIJO_RESPUESTA) === 0 && (c.estado === ESTADO.PENDIENTE || c.estado === ESTADO.CONTACTADO)) {
+    if (claveMensaje.indexOf(MSG.PREFIJO_NO_CUMPLE) === 0 && c.estado !== ESTADO.AGENDADO) {
+      cambios[COL.ESTADO] = ESTADO.NO_CUMPLE;
+    } else if (claveMensaje.indexOf(MSG.PREFIJO_RESPUESTA) === 0 && (c.estado === ESTADO.PENDIENTE || c.estado === ESTADO.CONTACTADO)) {
       cambios[COL.ESTADO] = ESTADO.RESPONDIO;
     }
     if (!c.responsable && remitente) cambios[COL.RESPONSABLE] = remitente;
@@ -1879,8 +1884,8 @@ const MANEJADORES = ['trigResumen', 'trigHorario'];
 
 const MENSAJES_INICIALES = [
   [MSG.PRIMER, '1er mensaje',
-    '¡Hola, {primer_nombre}! 👋 ¿Cómo vas?\nSoy {remitente} de AIESEC Colombia. Vi que te interesó vivir una experiencia en el exterior y quería contarte cómo funciona.\n\nCon Voluntario Global puedes viajar a otro país por 6 a 8 semanas, vivir una experiencia intercultural y aportar a un proyecto social conectado con los ODS de la ONU. 🌍\n\nEsta semana tenemos sesiones informativas grupales por Google Meet (puedes invitar a tu familia). Elige la que mejor te quede aquí:\n{link}\n\nY cuéntame: ¿qué es lo que más te llama la atención de irte al exterior? 😊',
-    'Basado en el Mensaje 1 del discurso oGV de Black November. {link} es SU link personal para agendar.'],
+    '¡Hola, {primer_nombre}! 👋 ¿Cómo vas?\nSoy {remitente} de AIESEC Colombia, la organización juvenil que conecta a jóvenes con experiencias internacionales. Vi que te interesó vivir una experiencia de voluntariado en el exterior con Voluntario Global 🌍\n\nPara recomendarte la mejor opción, cuéntame un poquito de ti:\n1️⃣ ¿Cuántos años tienes?\n2️⃣ ¿Qué estudias o a qué te dedicas?\n3️⃣ ¿En qué fechas te gustaría viajar?\n4️⃣ ¿Cuentas con recursos propios o con apoyo de tu familia para invertir en tu experiencia?\n\n¡Quedo atento/a! 😊',
+    'Presentación + preguntas de requisitos (sin decir los criterios). Si cumple, usa "✅ Cumple"; si no, el "❌ No cumple" que corresponda.'],
   [MSG.SEGUIMIENTO, 'Seguimiento',
     '¡Hola de nuevo, {primer_nombre}! 😊 Te escribo por si no alcanzaste a ver mi mensaje. Los cupos para las próximas salidas son limitados y el beneficio de Black November tiene fecha límite. Todavía hay espacio en las sesiones informativas de esta semana:\n{link}',
     'Para quienes no respondieron después de 1-2 días.'],
@@ -1888,11 +1893,32 @@ const MENSAJES_INICIALES = [
     '¡Hola, {primer_nombre}! Te recuerdo la sesión informativa de Voluntario Global el {fecha_reunion} a las {hora_reunion} (hora Colombia). 🙌 Si quieres, invita a tu familia.\n\nLink de Google Meet: {meet}\n\nSi necesitas cambiar el horario, puedes hacerlo aquí: {link}',
     'Para el día anterior a la reunión. Sale con un botón en el resumen de las 8 p. m.'],
   [MSG.PRIMER + '_GT', '1er mensaje (oGT)',
-    '¡Hola, {primer_nombre}! 👋 ¿Cómo vas?\nSoy {remitente} de AIESEC Colombia. Vi que te interesó una experiencia profesional en el exterior y quería contarte cómo funciona Talento Global.\n\nCon Talento Global haces una práctica o experiencia profesional en una empresa o proyecto en otro país, en un área afín a tu carrera, ganas experiencia internacional y vives una cultura distinta. 🌍\n\nEsta semana tenemos sesiones informativas grupales por Google Meet (puede acompañarte tu familia). Elige la que mejor te quede aquí:\n{link}\n\nY cuéntame: ¿qué estudias o a qué te dedicas, y qué te gustaría lograr con una experiencia en el exterior? 😊',
+    '¡Hola, {primer_nombre}! 👋 ¿Cómo vas?\nSoy {remitente} de AIESEC Colombia, la organización juvenil que conecta a jóvenes con experiencias internacionales. Vi que te interesó una experiencia profesional en el exterior con Talento Global 🌍\n\nPara recomendarte la mejor opción, cuéntame un poquito de ti:\n1️⃣ ¿Cuántos años tienes?\n2️⃣ ¿Qué carrera estudias?\n3️⃣ ¿En qué semestre vas (o ya te graduaste)?\n4️⃣ ¿Cómo es tu nivel de inglés?\n5️⃣ ¿Cuentas con recursos propios o con apoyo de tu familia para invertir en tu experiencia?\n\n¡Quedo atento/a! 😊',
     'Versión para leads de oGT (Talento Global). Se usa sola cuando el lead tiene "GT" en su programa.'],
   [MSG.SEGUIMIENTO + '_GT', 'Seguimiento (oGT)',
     '¡Hola de nuevo, {primer_nombre}! 😊 Te escribo por si no alcanzaste a ver mi mensaje sobre Talento Global. Una experiencia profesional internacional es un gran impulso para tu hoja de vida, y por Black November hay un beneficio con fecha límite. Todavía hay espacio en las sesiones de esta semana:\n{link}',
     'Seguimiento para leads de oGT.'],
+  ['RESP_CUMPLE', '✅ Cumple: agendar + HV',
+    '¡Genial, {primer_nombre}! Tu perfil encaja muy bien con lo que buscamos 🙌\n\nEl siguiente paso es una sesión informativa grupal por Google Meet donde te contamos los proyectos, el valor y el beneficio de Black November (puede acompañarte tu familia). Elige el horario aquí:\n{link}\n\nY por favor envíame por aquí tu hoja de vida en PDF para ir adelantando tu proceso 📄',
+    'Cuando la persona cumple los requisitos: le pide la hoja de vida y le manda su link para agendar.'],
+  ['RESP_PEDIR_HV', 'Pedir hoja de vida',
+    '{primer_nombre}, para avanzar con tu proceso necesito tu hoja de vida en PDF 📄 ¿Me la puedes enviar por aquí? ¡Gracias!',
+    'Recordatorio de la hoja de vida.'],
+  ['RESP_NOCUMPLE_EDAD', '❌ No cumple: edad',
+    'Gracias por contarme, {primer_nombre} 😊 Lo siento, por ahora no cumples el requisito mínimo de edad para los programas de intercambio de AIESEC. ¡Pero queremos tenerte en cuenta más adelante! Te escribiremos cuando haya una opción para ti. 💙',
+    'Marca al lead como \"No cumple\".'],
+  ['RESP_NOCUMPLE_DINERO', '❌ No cumple: recursos',
+    'Gracias por tu sinceridad, {primer_nombre} 😊 Lo siento, en este momento no cumples el requisito mínimo de recursos para iniciar el proceso. Si más adelante tu situación cambia, escríbenos: con gusto te acompañamos a planear tu experiencia con tiempo. 💙',
+    'Marca al lead como \"No cumple\".'],
+  ['RESP_NOCUMPLE_CARRERA', '❌ No cumple: carrera',
+    'Gracias por contarme, {primer_nombre} 😊 Lo siento, por ahora no cumples el requisito mínimo de carrera para las oportunidades de Talento Global que tenemos disponibles. Te escribiremos si se abre una opción para tu perfil. 💙',
+    'Solo oGT. Marca al lead como \"No cumple\".'],
+  ['RESP_NOCUMPLE_SEMESTRE', '❌ No cumple: semestre',
+    'Gracias por contarme, {primer_nombre} 😊 Lo siento, por ahora no cumples el requisito mínimo de semestre para Talento Global. ¡Cuando avances en tu carrera, escríbenos y retomamos tu proceso! 💙',
+    'Solo oGT. Marca al lead como \"No cumple\".'],
+  ['RESP_NOCUMPLE_INGLES', '❌ No cumple: inglés',
+    'Gracias por contarme, {primer_nombre} 😊 Lo siento, por ahora no cumples el requisito mínimo de inglés para Talento Global. Si fortaleces tu nivel, escríbenos y con gusto retomamos tu proceso. 💙',
+    'Solo oGT. Marca al lead como \"No cumple\".'],
   ['RESP_DESPUES_SEMESTRE', 'Más adelante',
     'Te entiendo, {primer_nombre}, y es válido querer tomarte tu tiempo. Las fechas de salida y los cupos por proyecto son limitados y el beneficio de Black November tiene fecha límite, pero no tienes que viajar ya: puedes asegurar tu proceso ahora y escoger una fecha de salida más adelante. Te cuento todo en la sesión: {link}',
     'Objeción "hablemos más adelante" (discurso oGV). Confirmen la política de cambio de fecha.'],
