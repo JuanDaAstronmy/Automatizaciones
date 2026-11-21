@@ -341,7 +341,7 @@ test('Sesiones grupales: cada persona tiene su horario y todos entran al mismo M
   assert.equal(r1.meet, r2.meet, 'mismo Meet para el grupo');
   assert.equal(env.eventos.size, 1);
   const ev = [...env.eventos.values()][0];
-  assert.equal(ev.summary, 'Sesión informativa AIESEC · con Ana');
+  assert.equal(ev.summary, 'Sesión informativa AIESEC');
   assert.deepEqual(ev.attendees.map((a) => a.email).sort(), ['ana@example.com', 'entrevistas@example.com', 'juan@example.com', 'maria@example.com']);
   assert.equal(env.registro.correos.at(-1).to, 'juan@example.com', 'confirmación propia al que se une');
   assert.equal(porNombre(env, 'Juan Gómez')['Sesión con'], 'Ana');
@@ -356,5 +356,5 @@ test('Sesiones grupales: cada persona tiene su horario y todos entran al mismo M
   assert.ok(![...env.eventos.values()][0].attendees.some((a) => a.email === 'juan@example.com'));
   env.llamar('agendaReservar', maria.ID, '2026-11-25T18:00:00-05:00', { nombre: 'Maria' });
   assert.equal(env.eventos.size, 1);
-  assert.equal([...env.eventos.values()][0].summary, 'Sesión informativa AIESEC · con Leidy y Cristian');
+  assert.match([...env.eventos.values()][0].description, /Leidy y Cristian/);
 });

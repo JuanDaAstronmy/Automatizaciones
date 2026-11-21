@@ -178,7 +178,7 @@ function unirseASesion_(contacto, slot) {
     listaCorreos_(cfg.CORREOS_INVITADOS).forEach(function (e) { if (sesion.correos.indexOf(e) < 0) asistentes.push({ email: e }); });
     if (correoValido_(contacto.correo)) asistentes.push({ email: contacto.correo, displayName: contacto.nombre });
     ev = Calendar.Events.insert({
-      summary: cfg.TIPO_REUNION + ' · con ' + slot.anfitrion,
+      summary: cfg.TIPO_REUNION,
       description: cfg.DESCRIPCION + '\n\nDa la sesión: ' + slot.anfitrion + '\nSesión grupal: los inscritos se ven en la hoja (pestaña Agendados).',
       start: { dateTime: isoConOffset_(new Date(slot.ms), off), timeZone: zona_() },
       end: { dateTime: isoConOffset_(new Date(slot.ms + slot.duracion * MS_MIN), off), timeZone: zona_() },
