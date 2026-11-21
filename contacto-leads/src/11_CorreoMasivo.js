@@ -35,8 +35,15 @@ function destinatariosCorreo_(programa) {
   });
 }
 
+/** Los emojis "largos" (📈😊🔗) se dañan al enviar desde Apps Script: se convierten a códigos HTML. */
+function emojisSeguros_(html) {
+  return String(html).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function (par) {
+    return '&#x' + par.codePointAt(0).toString(16).toUpperCase() + ';';
+  });
+}
+
 function opcionesEnvio_(cfg, p, adjuntos) {
-  const o = { htmlBody: p.html, name: cfg.CORREO_NOMBRE || cfg.ORG };
+  const o = { htmlBody: emojisSeguros_(p.html), name: cfg.CORREO_NOMBRE || cfg.ORG };
   if (cfg.CORREO_ALIAS) o.from = cfg.CORREO_ALIAS;
   if (adjuntos && adjuntos.length) o.attachments = adjuntos;
   return o;

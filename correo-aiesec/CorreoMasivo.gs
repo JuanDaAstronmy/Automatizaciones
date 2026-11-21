@@ -81,9 +81,16 @@ function enviar_(para, p, primer, completo) {
   const pon = function (t) {
     return String(t || '').replace(/\[\s*nombre\s*\]/gi, primer).replace(/\{primer_nombre\}/gi, primer).replace(/\{nombre\}/gi, completo);
   };
-  const o = { htmlBody: pon(p.html), name: NOMBRE_REMITENTE };
+  // Los emojis "largos" (📈😊🔗🎉) se dañan al enviar desde Apps Script: se convierten a códigos HTML.
+  const o = { to: para, subject: pon(p.asunto), body: pon(p.texto), htmlBody: emojisSeguros_(pon(p.html)), name: NOMBRE_REMITENTE };
   if (p.adjuntos.length) o.attachments = p.adjuntos;
-  GmailApp.sendEmail(para, pon(p.asunto), pon(p.texto), o);
+  MailApp.sendEmail(o);
+}
+
+function emojisSeguros_(html) {
+  return String(html).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function (par) {
+    return '&#x' + par.codePointAt(0).toString(16).toUpperCase() + ';';
+  });
 }
 
 function primerNombre_(n) {
