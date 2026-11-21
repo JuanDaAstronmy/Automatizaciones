@@ -100,7 +100,8 @@ function renderPlantilla_(texto, vars) {
 
 function linkWhatsApp_(telefono, texto) {
   const d = String(telefono || '').replace(/\D/g, '');
-  return 'https://wa.me/' + d + (texto ? '?text=' + encodeURIComponent(texto) : '');
+  // api.whatsapp.com conserva los emojis; wa.me a veces los convierte en "�" al redirigir.
+  return 'https://api.whatsapp.com/send?phone=' + d + (texto ? '&text=' + encodeURIComponent(texto) : '');
 }
 
 function escaparHtml_(s) {

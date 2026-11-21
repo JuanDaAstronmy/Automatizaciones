@@ -326,7 +326,8 @@ function renderPlantilla_(texto, vars) {
 
 function linkWhatsApp_(telefono, texto) {
   const d = String(telefono || '').replace(/\D/g, '');
-  return 'https://wa.me/' + d + (texto ? '?text=' + encodeURIComponent(texto) : '');
+  // api.whatsapp.com conserva los emojis; wa.me a veces los convierte en "�" al redirigir.
+  return 'https://api.whatsapp.com/send?phone=' + d + (texto ? '&text=' + encodeURIComponent(texto) : '');
 }
 
 function escaparHtml_(s) {
@@ -620,6 +621,7 @@ function aContacto_(f) {
     origen: String(f[COL.ORIGEN] || ''),
     eventoId: String(f[COL.EVENTO_ID] || '').trim(),
     sesion: String(f[COL.SESION] || '').trim(),
+    programa: /\bGT\b|talento|profesor/i.test(String(f[COL.INFO_EXTRA] || '') + ' ' + String(f[COL.ORIGEN] || '')) ? 'GT' : 'GV',
     creado: esFecha_(f[COL.CREADO]) ? f[COL.CREADO] : null,
   };
 }
@@ -1333,6 +1335,7 @@ function contactoParaPanel_(c, url, ahoraMs) {
     linkReunion: c.linkReunion,
     notas: c.notas,
     origen: c.origen,
+    programa: c.programa,
     creado: c.creado ? c.creado.getTime() : null,
     link: url && c.id ? url + '?id=' + c.id : '',
     vars: {
@@ -1881,6 +1884,12 @@ const MENSAJES_INICIALES = [
   [MSG.RECORDATORIO, 'Recordatorio',
     '¡Hola, {primer_nombre}! Te recuerdo la sesión informativa de Voluntario Global el {fecha_reunion} a las {hora_reunion} (hora Colombia). 🙌 Si quieres, invita a tu familia.\n\nLink de Google Meet: {meet}\n\nSi necesitas cambiar el horario, puedes hacerlo aquí: {link}',
     'Para el día anterior a la reunión. Sale con un botón en el resumen de las 8 p. m.'],
+  [MSG.PRIMER + '_GT', '1er mensaje (oGT)',
+    '¡Hola, {primer_nombre}! 👋 ¿Cómo vas?\nSoy {remitente} de AIESEC Colombia. Vi que te interesó una experiencia profesional en el exterior y quería contarte cómo funciona Talento Global.\n\nCon Talento Global haces una práctica o experiencia profesional en una empresa o proyecto en otro país, en un área afín a tu carrera, ganas experiencia internacional y vives una cultura distinta. 🌍\n\nEsta semana tenemos sesiones informativas grupales por Google Meet (puede acompañarte tu familia). Elige la que mejor te quede aquí:\n{link}\n\nY cuéntame: ¿qué estudias o a qué te dedicas, y qué te gustaría lograr con una experiencia en el exterior? 😊',
+    'Versión para leads de oGT (Talento Global). Se usa sola cuando el lead tiene "GT" en su programa.'],
+  [MSG.SEGUIMIENTO + '_GT', 'Seguimiento (oGT)',
+    '¡Hola de nuevo, {primer_nombre}! 😊 Te escribo por si no alcanzaste a ver mi mensaje sobre Talento Global. Una experiencia profesional internacional es un gran impulso para tu hoja de vida, y por Black November hay un beneficio con fecha límite. Todavía hay espacio en las sesiones de esta semana:\n{link}',
+    'Seguimiento para leads de oGT.'],
   ['RESP_DESPUES_SEMESTRE', 'Más adelante',
     'Te entiendo, {primer_nombre}, y es válido querer tomarte tu tiempo. Las fechas de salida y los cupos por proyecto son limitados y el beneficio de Black November tiene fecha límite, pero no tienes que viajar ya: puedes asegurar tu proceso ahora y escoger una fecha de salida más adelante. Te cuento todo en la sesión: {link}',
     'Objeción "hablemos más adelante" (discurso oGV). Confirmen la política de cambio de fecha.'],
@@ -1932,7 +1941,29 @@ function uiHoja_() {
 }
 
 /** Solo el dueño (la cuenta que configuró la primera vez) puede reconfigurar: los disparadores y el calendario viven en su cuenta. */
+/** Si la hoja es una COPIA (Archivo → Hacer una copia), olvida el dueño, calendario y clave de la hoja original. */
+function esCopia_() {
+  const id = props_().getProperty('ID_HOJA');
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  return !!(id && ss && ss.getId() !== id);
+}
+
+function reiniciarCopia_() {
+  const p = props_();
+  ['DUENO', 'ID_HOJA', 'ID_CALENDARIO', 'CLAVE_PANEL', 'URL_WEB_AUTO', 'ULTIMO_RESUMEN', 'TELEGRAM_TOKEN', 'TELEGRAM_CHAT_ID'].forEach(function (k) { p.deleteProperty(k); });
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJAS.CONFIG);
+  if (sh) {
+    const vals = sh.getRange(1, 1, Math.max(sh.getLastRow(), 1), 1).getValues();
+    vals.forEach(function (f, i) {
+      const et = normalizarTexto_(f[0]);
+      if (et === normalizarTexto_('URL de la app web')) sh.getRange(i + 1, 2).setValue('');
+      if (et === normalizarTexto_('Correos que reciben el resumen')) sh.getRange(i + 1, 2).setValue(Session.getEffectiveUser().getEmail());
+    });
+  }
+}
+
 function esDueno_() {
+  if (esCopia_()) return true;
   const dueno = props_().getProperty('DUENO');
   const yo = Session.getEffectiveUser().getEmail();
   return !dueno || !yo || dueno === yo;
@@ -2332,6 +2363,7 @@ function escribirInicio_() {
 /** Crea/repara todo. Se puede correr varias veces sin perder datos. */
 function configurarTodo_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (esCopia_()) reiniciarCopia_();
   libro_.cache = ss;
   getConfig_.cache = null;
   const p = props_();

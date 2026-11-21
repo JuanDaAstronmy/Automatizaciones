@@ -28,6 +28,7 @@ function contactoParaPanel_(c, url, ahoraMs) {
     linkReunion: c.linkReunion,
     notas: c.notas,
     origen: c.origen,
+    programa: c.programa,
     creado: c.creado ? c.creado.getTime() : null,
     link: url && c.id ? url + '?id=' + c.id : '',
     vars: {

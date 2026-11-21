@@ -261,7 +261,7 @@ test('Resumen: lista nuevos agendados, reuniones de hoy/mañana y botones de rec
   assert.equal(correo.subject, 'AIESEC · Resumen del mediodía: 1 nuevo agendado');
   assert.match(correo.htmlBody, /Maria Perez/);
   assert.match(correo.htmlBody, /meet\.google\.com/);
-  assert.match(correo.htmlBody, /wa\.me\/573001112233\?text=/, 'botón de recordatorio por WhatsApp');
+  assert.match(correo.htmlBody, /api\.whatsapp\.com\/send\?phone=573001112233&amp;text=/, 'botón de recordatorio por WhatsApp');
   // El siguiente resumen solo cuenta lo nuevo desde el anterior
   assert.equal(env.llamar('enviarResumen_').nuevos, 0);
 });
@@ -357,4 +357,28 @@ test('Sesiones grupales: cada persona tiene su horario y todos entran al mismo M
   env.llamar('agendaReservar', maria.ID, '2026-11-25T18:00:00-05:00', { nombre: 'Maria' });
   assert.equal(env.eventos.size, 1);
   assert.match([...env.eventos.values()][0].description, /Leidy y Cristian/);
+});
+
+test('Leads de oGT se marcan como GT para usar sus mensajes; los links conservan emojis', () => {
+  const { env } = preparado();
+  env.hoja('Importar').data = [['Nombre', 'Teléfono', 'Programa'], ['Paul Royero', '3003151688', 'Talento (GT)'], ['Ana Voluntaria', '3009998877', 'Voluntariado (GV)']];
+  env.llamar('importarPestanaImportar_');
+  const d = env.llamar('panelDatos', env.props.get('CLAVE_PANEL'));
+  assert.equal(d.contactos.find((c) => c.nombre === 'Paul Royero').programa, 'GT');
+  assert.equal(d.contactos.find((c) => c.nombre === 'Ana Voluntaria').programa, 'GV');
+  assert.ok(d.mensajes.some((m) => m.clave === 'PRIMER_CONTACTO_GT'));
+  assert.equal(env.ctx.linkWhatsApp_('573001112233', 'Hola 👋'), 'https://api.whatsapp.com/send?phone=573001112233&text=Hola%20%F0%9F%91%8B');
+});
+
+test('Una copia de la hoja en otra cuenta arranca con su propio calendario, clave y dueño', () => {
+  const { env } = preparado();
+  const claveVieja = env.props.get('CLAVE_PANEL');
+  env.props.set('ID_HOJA', 'HOJA_ORIGINAL');       // simula que el script viene de otra hoja
+  env.props.set('DUENO', 'cuenta-udea@example.com');
+  env.llamar('menuConfigurar');
+  assert.equal(env.props.get('DUENO'), 'dueno@example.com');
+  assert.notEqual(env.props.get('CLAVE_PANEL'), claveVieja);
+  assert.ok(env.props.get('ID_CALENDARIO'), 'busca o crea el calendario en la cuenta nueva');
+  assert.equal(env.hoja('Config').data.find((f) => f[0] === 'URL de la app web')[1], '', 'hay que pegar la URL nueva');
+  assert.equal(env.hoja('Contactos').objetos().length, 3, 'los contactos se conservan');
 });

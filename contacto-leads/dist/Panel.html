@@ -120,8 +120,13 @@
       return Object.prototype.hasOwnProperty.call(v, k) ? (v[k] == null ? '' : String(v[k])) : m;
     }).trim();
   }
-  function wa(c, texto) { return 'https://wa.me/' + c.telefono + (texto ? '?text=' + encodeURIComponent(texto) : ''); }
-  function msg(clave) { return (S.d.mensajes || []).filter(function (m) { return m.clave === clave; })[0]; }
+  function wa(c, texto) { return 'https://api.whatsapp.com/send?phone=' + c.telefono + (texto ? '&text=' + encodeURIComponent(texto) : ''); }
+  /* Si el lead es de oGT y existe la versión CLAVE_GT del mensaje, se usa esa. */
+  function msg(clave, c) {
+    var ms = S.d.mensajes || [];
+    var buscar = function (k) { return ms.filter(function (m) { return m.clave === k; })[0]; };
+    return (c && c.programa === 'GT' && buscar(clave + '_GT')) || buscar(clave);
+  }
   function respuestas() { return (S.d.mensajes || []).filter(function (m) { return m.clave.indexOf('RESP_') === 0; }); }
 
   /* ------------------------------ Datos ------------------------------ */
@@ -233,7 +238,7 @@
   }
 
   function botonWa(c, clave, etiqueta, clase) {
-    var m = msg(clave);
+    var m = msg(clave, c);
     var texto = m ? render(m.texto, c) : '';
     return el('a', { clase: 'btn wa ' + (clase || ''), href: wa(c, texto), target: '_blank', rel: 'noopener', texto: etiqueta,
       onclick: function (ev) { if (necesitaQuien(ev)) return; registrar(c, clave); } });
@@ -283,7 +288,7 @@
       resp.forEach(function (m) { cajaResp.appendChild(itemMensaje(c, m)); });
       cont.appendChild(cajaResp);
       cont.appendChild(el('div', { clase: 'seccion', texto: 'Otros mensajes' }));
-      (S.d.mensajes || []).filter(function (m) { return m.clave.indexOf('RESP_') !== 0 && (m.clave !== 'RECORDATORIO' || c.fechaReunion); }).forEach(function (m) { cont.appendChild(itemMensaje(c, m)); });
+      (S.d.mensajes || []).filter(function (m) { return m.clave.indexOf('RESP_') !== 0 && !/_GT$/.test(m.clave) && (m.clave !== 'RECORDATORIO' || c.fechaReunion); }).map(function (m) { return msg(m.clave, c); }).forEach(function (m) { cont.appendChild(itemMensaje(c, m)); });
       cont.appendChild(el('a', { clase: 'msg', href: wa(c, ''), target: '_blank', rel: 'noopener' }, el('b', { texto: 'Abrir chat vacío' })));
     }
 
@@ -384,7 +389,7 @@
       return;
     }
     R.actual = c.id; R.enviado = false;
-    var m = msg('PRIMER_CONTACTO');
+    var m = msg('PRIMER_CONTACTO', c);
     var texto = m ? render(m.texto, c) : '';
     var enviar = el('a', { clase: 'btn wa', estilo: 'width:100%;padding:16px;font-size:17px;opacity:.5;pointer-events:none', href: wa(c, texto), target: '_blank', rel: 'noopener', texto: 'Reservando contacto…' });
     enviar.addEventListener('click', function () {
