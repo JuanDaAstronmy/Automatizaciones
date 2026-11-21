@@ -43,12 +43,13 @@ const COL = {
   INFO_EXTRA: 'Info del formulario',
   CREADO: 'Creado',
   SESION: 'Sesión con',
+  CORREO_ENVIADO: 'Correo enviado',
   EVENTO_ID: 'Evento (técnico)',
 };
 
 const COLUMNAS_CONTACTOS = [
   COL.ID, COL.NOMBRE, COL.TELEFONO, COL.CORREO, COL.ESTADO, COL.RESPONSABLE,
-  COL.INTENTOS, COL.ULTIMO_CONTACTO, COL.FECHA_REUNION, COL.SESION, COL.LINK_REUNION,
+  COL.INTENTOS, COL.ULTIMO_CONTACTO, COL.FECHA_REUNION, COL.SESION, COL.LINK_REUNION, COL.CORREO_ENVIADO,
   COL.AGENDADO_EL, COL.NOTAS, COL.ORIGEN, COL.LINK_AGENDA, COL.INFO_EXTRA,
   COL.CREADO, COL.EVENTO_ID,
 ];
@@ -162,6 +163,8 @@ const DEF_CONFIG = [
   { k: 'MC_URL', tipo: 'texto', def: '', etiqueta: 'Hoja de seguimiento MC (URL)', ayuda: 'Opcional. Cada hora se copia allí el avance del panel (Contacto Whatsapp, FUP, fecha, STATUS ACTUAL y comentario).' },
   { k: 'MC_PESTANA', tipo: 'texto', def: 'Campaña Recontacto', etiqueta: 'Pestaña de la hoja MC', ayuda: '' },
   { k: 'MC_NOMBRE', tipo: 'texto', def: '', etiqueta: 'Mi nombre en la hoja MC', ayuda: 'Tal como aparece en "Recontactado Por". Solo se tocan esas filas.' },
+  { k: 'CORREO_ALIAS', tipo: 'texto', def: '', etiqueta: 'Enviar correos masivos como (alias)', ayuda: 'Opcional. Un correo configurado en "Enviar como" de la cuenta dueña (Gmail → Configuración → Cuentas). Vacío = desde la cuenta dueña.' },
+  { k: 'CORREO_NOMBRE', tipo: 'texto', def: '', etiqueta: 'Nombre del remitente de los correos', ayuda: 'Ej.: Juan David · AIESEC Colombia. Vacío = nombre de la organización.' },
   { k: 'PERMITIR_GENERAL', tipo: 'sino', def: 'SI', etiqueta: 'Permitir agendar con el link general', ayuda: 'SI = el link sin ?id= también funciona (pide nombre y WhatsApp).' },
   { k: 'MODO_WA', tipo: 'texto', def: 'MANUAL', etiqueta: 'Modo de envío de WhatsApp', ayuda: 'MANUAL (gratis, 1 toque por persona desde el panel) o API (WhatsApp Cloud API, ver docs).' },
   { k: 'AUTO_API', tipo: 'sino', def: 'NO', etiqueta: 'Enviar solo a leads nuevos por API', ayuda: 'Solo en modo API: cada hora envía la invitación a los leads Pendientes.' },
@@ -627,6 +630,7 @@ function aContacto_(f) {
     origen: String(f[COL.ORIGEN] || ''),
     eventoId: String(f[COL.EVENTO_ID] || '').trim(),
     sesion: String(f[COL.SESION] || '').trim(),
+    correoEnviado: esFecha_(f[COL.CORREO_ENVIADO]) || String(f[COL.CORREO_ENVIADO] || '').trim() !== '',
     programa: /\bGT\b|talento|profesor/i.test(String(f[COL.INFO_EXTRA] || '') + ' ' + String(f[COL.ORIGEN] || '')) ? 'GT' : 'GV',
     creado: esFecha_(f[COL.CREADO]) ? f[COL.CREADO] : null,
   };
@@ -1961,6 +1965,9 @@ function onOpen() {
     .addItem('🔄 Actualizar la hoja MC ahora', 'menuSincronizarMC')
     .addItem('🔑 Cambiar la clave del panel', 'menuNuevaClave')
     .addSeparator()
+    .addSubMenu(ui.createMenu('✉️ Correo masivo personalizado')
+      .addItem('1. Enviarme una prueba', 'menuCorreoPrueba')
+      .addItem('2. Enviar a los que faltan', 'menuCorreoMasivo'))
     .addSubMenu(ui.createMenu('🔔 Avisos por Telegram (opcional)')
       .addItem('Conectar Telegram', 'menuTelegram')
       .addItem('Desconectar Telegram', 'menuQuitarTelegram'))
@@ -2068,6 +2075,41 @@ function menuSincronizarMC() {
   const r = sincronizarMC_();
   ui.alert('🔄 Hoja MC actualizada', r.actualizados + ' filas actualizadas · ' + r.sinCambios + ' sin cambios' +
     (r.noEncontrados ? '\n' + r.noEncontrados + ' contactos no aparecen a tu nombre en la hoja MC (revisa "Mi nombre en la hoja MC").' : ''), ui.ButtonSet.OK);
+}
+
+function pedirAsuntoBorrador_(ui) {
+  const previo = props_().getProperty('CORREO_ASUNTO') || '';
+  const r = ui.prompt('✉️ Correo masivo', 'Escribe una parte del ASUNTO del borrador de Gmail que quieres enviar' +
+    (previo ? ' (Enter = "' + previo + '")' : '') + '.\nEn el borrador escribe [Nombre] donde va el nombre de cada persona.', ui.ButtonSet.OK_CANCEL);
+  if (r.getSelectedButton() !== ui.Button.OK) return '';
+  const asunto = r.getResponseText().trim() || previo;
+  if (asunto) props_().setProperty('CORREO_ASUNTO', asunto);
+  return asunto;
+}
+
+function menuCorreoPrueba() {
+  const ui = uiHoja_();
+  const asunto = pedirAsuntoBorrador_(ui);
+  if (!asunto) return;
+  const a = enviarPruebaCorreo_(asunto);
+  ui.alert('✅ Te envié una prueba a ' + a + ' con el nombre "Prueba". Revísala antes de enviar a todos.');
+}
+
+function menuCorreoMasivo() {
+  const ui = uiHoja_();
+  const asunto = pedirAsuntoBorrador_(ui);
+  if (!asunto) return;
+  const rp = ui.prompt('✉️ ¿A qué programa?', 'Escribe GV, GT o TODOS.', ui.ButtonSet.OK_CANCEL);
+  if (rp.getSelectedButton() !== ui.Button.OK) return;
+  const programa = /GT/i.test(rp.getResponseText()) ? 'GT' : /GV/i.test(rp.getResponseText()) ? 'GV' : 'TODOS';
+  const n = destinatariosCorreo_(programa).length;
+  const cupo = MailApp.getRemainingDailyQuota();
+  if (!n) { ui.alert('No hay contactos pendientes con correo para ese programa.'); return; }
+  if (ui.alert('✉️ Confirmar envío', 'Se enviará "' + borradorPlantilla_(asunto).asunto + '" a ' + n + ' personas (' + programa + ').\n' +
+    'Cupo de correos que te queda hoy: ' + cupo + '. Si no alcanza, el resto se envía otro día con este mismo botón.\n\n¿Continuar?', ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
+  const r = enviarCorreoMasivo_(asunto, programa);
+  ui.alert('Resultado', '✅ Enviados: ' + r.enviados + (r.pendientes ? '\n⏳ Pendientes (cupo de hoy agotado): ' + r.pendientes : '') +
+    (r.errores.length ? '\n❌ Errores:\n' + r.errores.slice(0, 5).join('\n') : ''), ui.ButtonSet.OK);
 }
 
 function menuNuevaClave() {
@@ -2561,5 +2603,89 @@ function sincronizarMC_() {
     if (cambio) res.actualizados++; else res.sinCambios++;
   });
   props_().setProperty('ULTIMA_SINC_MC', String(Date.now()));
+  return res;
+}
+
+// ==================== 11_CorreoMasivo.js ====================
+/* =================== Correo masivo personalizado ===================
+ * Envía un BORRADOR de Gmail (de la cuenta dueña del script) a cada lead con correo,
+ * cambiando [Nombre] / {primer_nombre} / {nombre} por el nombre de cada persona.
+ * - Se envía desde la cuenta dueña de la hoja (o desde un alias "Enviar como" de esa cuenta).
+ * - Respeta el cupo diario de Google (cuentas @gmail ≈ 100 destinatarios/día): si se acaba,
+ *   continúa al día siguiente con "Enviar a los que faltan".
+ * - Marca la columna "Correo enviado" para no repetir.
+ */
+
+function personalizarCorreo_(texto, c) {
+  const primer = c.primerNombre || '';
+  return String(texto || '')
+    .replace(/\[\s*nombre\s*\]/gi, primer)
+    .replace(/\{primer_nombre\}/gi, primer)
+    .replace(/\{nombre\}/gi, c.nombre || primer);
+}
+
+/** Busca el borrador cuyo asunto contiene el texto dado. */
+function borradorPlantilla_(asunto) {
+  const buscado = normalizarTexto_(asunto);
+  const d = GmailApp.getDrafts().filter(function (x) {
+    return normalizarTexto_(x.getMessage().getSubject()).indexOf(buscado) >= 0;
+  })[0];
+  if (!d) throw new Error('No encontré un borrador cuyo asunto contenga "' + asunto + '". Revisa la carpeta Borradores de la cuenta dueña de la hoja.');
+  const m = d.getMessage();
+  return { asunto: m.getSubject(), html: m.getBody(), texto: m.getPlainBody(), adjuntos: m.getAttachments({ includeInlineImages: false }) };
+}
+
+/** Destinatarios: con correo válido, sin "Correo enviado", del programa elegido y sin descartar. */
+function destinatariosCorreo_(programa) {
+  return leerContactos_().filter(function (c) {
+    if (!correoValido_(c.correo) || c.correoEnviado) return false;
+    if ([ESTADO.NO_CUMPLE, ESTADO.NO_INTERESADO].indexOf(c.estado) >= 0) return false;
+    return !programa || programa === 'TODOS' || c.programa === programa;
+  });
+}
+
+function opcionesEnvio_(cfg, p, adjuntos) {
+  const o = { htmlBody: p.html, name: cfg.CORREO_NOMBRE || cfg.ORG };
+  if (cfg.CORREO_ALIAS) o.from = cfg.CORREO_ALIAS;
+  if (adjuntos && adjuntos.length) o.attachments = adjuntos;
+  return o;
+}
+
+/** Envía la prueba a la cuenta dueña, con el nombre de ejemplo "Prueba". */
+function enviarPruebaCorreo_(asunto) {
+  const cfg = getConfig_();
+  const p = borradorPlantilla_(asunto);
+  const yo = Session.getEffectiveUser().getEmail();
+  const ejemplo = { nombre: 'Prueba Ejemplo', primerNombre: 'Prueba' };
+  GmailApp.sendEmail(yo, personalizarCorreo_(p.asunto, ejemplo), personalizarCorreo_(p.texto, ejemplo),
+    opcionesEnvio_(cfg, { html: personalizarCorreo_(p.html, ejemplo) }, p.adjuntos));
+  return yo;
+}
+
+/** Envía a todos los que faltan (hasta agotar el cupo diario). */
+function enviarCorreoMasivo_(asunto, programa) {
+  const cfg = getConfig_();
+  const p = borradorPlantilla_(asunto);
+  const tabla = tablaContactos_();
+  const lista = destinatariosCorreo_(programa);
+  const res = { enviados: 0, pendientes: 0, errores: [] };
+  let cupo = MailApp.getRemainingDailyQuota() - 3; // deja margen para los resúmenes del día
+  const inicio = Date.now();
+  lista.forEach(function (c) {
+    if (cupo <= 0 || Date.now() - inicio > 270000) { res.pendientes++; return; }
+    try {
+      GmailApp.sendEmail(c.correo, personalizarCorreo_(p.asunto, c), personalizarCorreo_(p.texto, c),
+        opcionesEnvio_(cfg, { html: personalizarCorreo_(p.html, c) }, p.adjuntos));
+      const cambios = {};
+      cambios[COL.CORREO_ENVIADO] = new Date();
+      actualizarFila_(tabla, c._fila, cambios);
+      registrar_('Correo masivo', c.id, c.nombre, p.asunto, Session.getEffectiveUser().getEmail());
+      res.enviados++;
+      cupo--;
+      Utilities.sleep(400);
+    } catch (e) {
+      res.errores.push(c.nombre + ' (' + c.correo + '): ' + e.message);
+    }
+  });
   return res;
 }

@@ -434,3 +434,28 @@ test('Sincroniza el avance con la hoja MC, solo en filas propias y con teléfono
   assert.equal(r.noEncontrados, 1, 'Juan no está a mi nombre');
   assert.equal(env.llamar('sincronizarMC_').actualizados, 0, 'la segunda vez no reescribe nada');
 });
+
+test('Correo masivo: personaliza [Nombre], filtra por programa, no repite y respeta el cupo', () => {
+  const { env } = preparado({ cupoCorreo: 10, borradores: [{ asunto: '[Correo AIESEC] Contacto de ADS Black November', html: '<b>Hola, [Nombre]:</b> Voluntario Global', texto: 'Hola, [Nombre]:' }] });
+  env.hoja('Importar').data = [['Nombre', 'Teléfono', 'Correo', 'Programa'], ['Paul Royero', '3003151688', 'paul@example.com', 'Talento (GT)'], ['Ana Ruiz', '3009998877', 'ana@example.com', 'Voluntariado (GV)']];
+  env.llamar('importarPestanaImportar_');
+  env.config('Enviar correos masivos como (alias)', 'voluntario@aiesec.example');
+  const r = env.llamar('enviarCorreoMasivo_', 'Black November', 'GV');
+  const a = env.registro.gmail.map((g) => g.to).sort();
+  // Solo GV (Paul es GT); Fijo Raro no tiene WhatsApp válido pero sí correo, así que también le llega.
+  assert.deepEqual(a, ['ana@example.com', 'fijo@example.com', 'maria@example.com']);
+  assert.equal(r.enviados, 3);
+  const m = env.registro.gmail.find((g) => g.to === 'maria@example.com');
+  assert.equal(m.o.htmlBody, '<b>Hola, Maria:</b> Voluntario Global');
+  assert.equal(m.o.from, 'voluntario@aiesec.example');
+  assert.ok(porNombre(env, 'Maria Perez')['Correo enviado']);
+  assert.equal(env.llamar('enviarCorreoMasivo_', 'Black November', 'GV').enviados, 0, 'no repite');
+  assert.throws(() => env.llamar('enviarCorreoMasivo_', 'asunto que no existe', 'GV'), /borrador/);
+});
+
+test('Correo masivo: si el cupo diario se acaba, deja el resto pendiente', () => {
+  const { env } = preparado({ cupoCorreo: 4, borradores: [{ asunto: 'Black November', html: 'Hola [Nombre]' }] });
+  const r = env.llamar('enviarCorreoMasivo_', 'Black November', 'TODOS');
+  assert.equal(r.enviados, 1, 'cupo 4 − 3 de margen para los resúmenes');
+  assert.equal(r.pendientes, 1);
+});

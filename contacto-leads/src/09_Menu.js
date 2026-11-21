@@ -78,6 +78,9 @@ function onOpen() {
     .addItem('🔄 Actualizar la hoja MC ahora', 'menuSincronizarMC')
     .addItem('🔑 Cambiar la clave del panel', 'menuNuevaClave')
     .addSeparator()
+    .addSubMenu(ui.createMenu('✉️ Correo masivo personalizado')
+      .addItem('1. Enviarme una prueba', 'menuCorreoPrueba')
+      .addItem('2. Enviar a los que faltan', 'menuCorreoMasivo'))
     .addSubMenu(ui.createMenu('🔔 Avisos por Telegram (opcional)')
       .addItem('Conectar Telegram', 'menuTelegram')
       .addItem('Desconectar Telegram', 'menuQuitarTelegram'))
@@ -185,6 +188,41 @@ function menuSincronizarMC() {
   const r = sincronizarMC_();
   ui.alert('🔄 Hoja MC actualizada', r.actualizados + ' filas actualizadas · ' + r.sinCambios + ' sin cambios' +
     (r.noEncontrados ? '\n' + r.noEncontrados + ' contactos no aparecen a tu nombre en la hoja MC (revisa "Mi nombre en la hoja MC").' : ''), ui.ButtonSet.OK);
+}
+
+function pedirAsuntoBorrador_(ui) {
+  const previo = props_().getProperty('CORREO_ASUNTO') || '';
+  const r = ui.prompt('✉️ Correo masivo', 'Escribe una parte del ASUNTO del borrador de Gmail que quieres enviar' +
+    (previo ? ' (Enter = "' + previo + '")' : '') + '.\nEn el borrador escribe [Nombre] donde va el nombre de cada persona.', ui.ButtonSet.OK_CANCEL);
+  if (r.getSelectedButton() !== ui.Button.OK) return '';
+  const asunto = r.getResponseText().trim() || previo;
+  if (asunto) props_().setProperty('CORREO_ASUNTO', asunto);
+  return asunto;
+}
+
+function menuCorreoPrueba() {
+  const ui = uiHoja_();
+  const asunto = pedirAsuntoBorrador_(ui);
+  if (!asunto) return;
+  const a = enviarPruebaCorreo_(asunto);
+  ui.alert('✅ Te envié una prueba a ' + a + ' con el nombre "Prueba". Revísala antes de enviar a todos.');
+}
+
+function menuCorreoMasivo() {
+  const ui = uiHoja_();
+  const asunto = pedirAsuntoBorrador_(ui);
+  if (!asunto) return;
+  const rp = ui.prompt('✉️ ¿A qué programa?', 'Escribe GV, GT o TODOS.', ui.ButtonSet.OK_CANCEL);
+  if (rp.getSelectedButton() !== ui.Button.OK) return;
+  const programa = /GT/i.test(rp.getResponseText()) ? 'GT' : /GV/i.test(rp.getResponseText()) ? 'GV' : 'TODOS';
+  const n = destinatariosCorreo_(programa).length;
+  const cupo = MailApp.getRemainingDailyQuota();
+  if (!n) { ui.alert('No hay contactos pendientes con correo para ese programa.'); return; }
+  if (ui.alert('✉️ Confirmar envío', 'Se enviará "' + borradorPlantilla_(asunto).asunto + '" a ' + n + ' personas (' + programa + ').\n' +
+    'Cupo de correos que te queda hoy: ' + cupo + '. Si no alcanza, el resto se envía otro día con este mismo botón.\n\n¿Continuar?', ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
+  const r = enviarCorreoMasivo_(asunto, programa);
+  ui.alert('Resultado', '✅ Enviados: ' + r.enviados + (r.pendientes ? '\n⏳ Pendientes (cupo de hoy agotado): ' + r.pendientes : '') +
+    (r.errores.length ? '\n❌ Errores:\n' + r.errores.slice(0, 5).join('\n') : ''), ui.ButtonSet.OK);
 }
 
 function menuNuevaClave() {

@@ -40,12 +40,13 @@ const COL = {
   INFO_EXTRA: 'Info del formulario',
   CREADO: 'Creado',
   SESION: 'Sesión con',
+  CORREO_ENVIADO: 'Correo enviado',
   EVENTO_ID: 'Evento (técnico)',
 };
 
 const COLUMNAS_CONTACTOS = [
   COL.ID, COL.NOMBRE, COL.TELEFONO, COL.CORREO, COL.ESTADO, COL.RESPONSABLE,
-  COL.INTENTOS, COL.ULTIMO_CONTACTO, COL.FECHA_REUNION, COL.SESION, COL.LINK_REUNION,
+  COL.INTENTOS, COL.ULTIMO_CONTACTO, COL.FECHA_REUNION, COL.SESION, COL.LINK_REUNION, COL.CORREO_ENVIADO,
   COL.AGENDADO_EL, COL.NOTAS, COL.ORIGEN, COL.LINK_AGENDA, COL.INFO_EXTRA,
   COL.CREADO, COL.EVENTO_ID,
 ];
@@ -159,6 +160,8 @@ const DEF_CONFIG = [
   { k: 'MC_URL', tipo: 'texto', def: '', etiqueta: 'Hoja de seguimiento MC (URL)', ayuda: 'Opcional. Cada hora se copia allí el avance del panel (Contacto Whatsapp, FUP, fecha, STATUS ACTUAL y comentario).' },
   { k: 'MC_PESTANA', tipo: 'texto', def: 'Campaña Recontacto', etiqueta: 'Pestaña de la hoja MC', ayuda: '' },
   { k: 'MC_NOMBRE', tipo: 'texto', def: '', etiqueta: 'Mi nombre en la hoja MC', ayuda: 'Tal como aparece en "Recontactado Por". Solo se tocan esas filas.' },
+  { k: 'CORREO_ALIAS', tipo: 'texto', def: '', etiqueta: 'Enviar correos masivos como (alias)', ayuda: 'Opcional. Un correo configurado en "Enviar como" de la cuenta dueña (Gmail → Configuración → Cuentas). Vacío = desde la cuenta dueña.' },
+  { k: 'CORREO_NOMBRE', tipo: 'texto', def: '', etiqueta: 'Nombre del remitente de los correos', ayuda: 'Ej.: Juan David · AIESEC Colombia. Vacío = nombre de la organización.' },
   { k: 'PERMITIR_GENERAL', tipo: 'sino', def: 'SI', etiqueta: 'Permitir agendar con el link general', ayuda: 'SI = el link sin ?id= también funciona (pide nombre y WhatsApp).' },
   { k: 'MODO_WA', tipo: 'texto', def: 'MANUAL', etiqueta: 'Modo de envío de WhatsApp', ayuda: 'MANUAL (gratis, 1 toque por persona desde el panel) o API (WhatsApp Cloud API, ver docs).' },
   { k: 'AUTO_API', tipo: 'sino', def: 'NO', etiqueta: 'Enviar solo a leads nuevos por API', ayuda: 'Solo en modo API: cada hora envía la invitación a los leads Pendientes.' },

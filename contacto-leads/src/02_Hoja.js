@@ -96,6 +96,7 @@ function aContacto_(f) {
     origen: String(f[COL.ORIGEN] || ''),
     eventoId: String(f[COL.EVENTO_ID] || '').trim(),
     sesion: String(f[COL.SESION] || '').trim(),
+    correoEnviado: esFecha_(f[COL.CORREO_ENVIADO]) || String(f[COL.CORREO_ENVIADO] || '').trim() !== '',
     programa: /\bGT\b|talento|profesor/i.test(String(f[COL.INFO_EXTRA] || '') + ' ' + String(f[COL.ORIGEN] || '')) ? 'GT' : 'GV',
     creado: esFecha_(f[COL.CREADO]) ? f[COL.CREADO] : null,
   };

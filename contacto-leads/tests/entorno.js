@@ -135,7 +135,7 @@ function formatDate(d, _tz, fmt) {
 function crearEntorno(opciones = {}) {
   const AHORA = new Date(opciones.ahora || '2026-11-20T10:00:00-05:00').getTime();
   const props = new Map(Object.entries(opciones.props || {}));
-  const registro = { correos: [], fetch: [], alertas: [], dialogos: [], eventosBorrados: [], sendUpdates: [] };
+  const registro = { correos: [], fetch: [], alertas: [], dialogos: [], eventosBorrados: [], sendUpdates: [], gmail: [] };
   const libro = new FakeSpreadsheet();
   const fuentes = {};
   const calendarios = {};
@@ -229,7 +229,11 @@ function crearEntorno(opciones = {}) {
       },
       Freebusy: { query: () => ({ calendars: { primary: { busy: opciones.ocupadoPrincipal || [] } } }) },
     },
-    MailApp: { sendEmail: (o) => registro.correos.push(o) },
+    MailApp: { sendEmail: (o) => registro.correos.push(o), getRemainingDailyQuota: () => (opciones.cupoCorreo === undefined ? 100 : opciones.cupoCorreo) },
+    GmailApp: {
+      getDrafts: () => (opciones.borradores || []).map((b) => ({ getMessage: () => ({ getSubject: () => b.asunto, getBody: () => b.html, getPlainBody: () => b.texto || '', getAttachments: () => [] }) })),
+      sendEmail: (to, asunto, texto, o) => registro.gmail.push({ to, asunto, texto, o }),
+    },
     UrlFetchApp: {
       fetch: (url, o) => {
         registro.fetch.push({ url, o, payload: o && o.payload ? JSON.parse(o.payload) : null });
