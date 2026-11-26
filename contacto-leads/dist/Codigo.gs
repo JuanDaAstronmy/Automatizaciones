@@ -141,6 +141,7 @@ const DEF_CONFIG = [
   { k: 'PASO', tipo: 'num', def: 30, etiqueta: 'Cada cuántos minutos empieza un horario', ayuda: 'Ej.: 30 → 9:00, 9:30, 10:00…' },
   { k: 'CUPOS', tipo: 'num', def: 1, etiqueta: 'Reuniones a la misma hora', ayuda: 'Pon 2 si dos personas del equipo pueden entrevistar en paralelo.' },
   { k: 'ANTICIPACION', tipo: 'num', def: 3, etiqueta: 'Anticipación mínima para agendar (horas)', ayuda: 'Evita que alguien agende para dentro de 10 minutos.' },
+  { k: 'DIAS_MIN', tipo: 'num', def: 0, etiqueta: 'Días mínimos de anticipación', ayuda: '0 = desde hoy · 1 = desde mañana · 2 = desde pasado mañana (ej. un jueves solo se puede agendar del sábado en adelante).' },
   { k: 'DIAS', tipo: 'num', def: 10, etiqueta: 'Días hacia adelante que se muestran', ayuda: '' },
   { k: 'H1', tipo: 'horario', def: '09:00-12:00, 14:00-18:00', etiqueta: 'Horario lunes', ayuda: 'Formato 09:00-12:00, 14:00-18:00. Déjalo vacío si ese día no hay reuniones.' },
   { k: 'H2', tipo: 'horario', def: '09:00-12:00, 14:00-18:00', etiqueta: 'Horario martes', ayuda: '' },
@@ -486,7 +487,7 @@ function calcularHorarios_(p) {
   const bloqueos = p.bloqueos || [];
   const cupos = Math.max(1, p.cupos || 1);
   const dias = [];
-  for (let i = 0; i < p.dias; i++) {
+  for (let i = Math.max(0, p.diasMin || 0); i < (p.diasMin || 0) + p.dias; i++) {
     const t = new Date(Date.UTC(hoy.y, hoy.m - 1, hoy.d + i));
     const y = t.getUTCFullYear(), m = t.getUTCMonth() + 1, d = t.getUTCDate();
     const clave = claveFecha_(y, m, d);
@@ -500,7 +501,7 @@ function calcularHorarios_(p) {
       if (bloqueos.some(function (b) { return b.inicio < e && b.fin > s; })) return;
       const inscritos = reservas.filter(function (r) { return r.inicio === s; }).length;
       if (inscritos >= se.cupos) return;
-      horarios.push({ inicio: isoConOffset_(new Date(s), off), ms: s, etiqueta: formatearHora_(new Date(s), off), anfitrion: se.anfitrion, duracion: se.duracion, cuposLibres: se.cupos - inscritos });
+      horarios.push({ inicio: isoConOffset_(new Date(s), off), ms: s, etiqueta: formatearHora_(new Date(s), off), anfitrion: se.anfitrion, duracion: se.duracion, cuposLibres: se.cupos - inscritos, recomendado: inscritos > 0 });
     });
     (p.sesiones && p.sesiones.length ? [] : (p.horario[t.getUTCDay()] || [])).forEach(function (tramo) {
       const finTramo = fechaDesdeLocal_(y, m, d, tramo[1], off).getTime();
@@ -517,7 +518,8 @@ function calcularHorarios_(p) {
     if (!horarios.length) continue;
     horarios.sort(function (a, b) { return a.ms - b.ms; });
     const base = fechaDesdeLocal_(y, m, d, 12 * 60, off);
-    dias.push({ fecha: clave, etiqueta: formatearDiaCorto_(base, off), etiquetaLarga: formatearDia_(base, off), horarios: horarios });
+    dias.push({ fecha: clave, etiqueta: formatearDiaCorto_(base, off), etiquetaLarga: formatearDia_(base, off), horarios: horarios,
+      recomendado: horarios.some(function (h) { return h.recomendado; }) });
   }
   return dias;
 }
@@ -963,7 +965,7 @@ function horariosDisponibles_(ahora, programa) {
   }
   return calcularHorarios_({
     ahora: ahora, offMin: off, horario: horarioSemanal_(cfg), duracionMin: cfg.DURACION, pasoMin: cfg.PASO,
-    anticipacionMin: cfg.ANTICIPACION * 60, dias: cfg.DIAS, cupos: cfg.CUPOS, reservas: reservas, bloqueos: bloqueos,
+    anticipacionMin: cfg.ANTICIPACION * 60, dias: cfg.DIAS, diasMin: Math.max(0, Math.floor(cfg.DIAS_MIN || 0)), cupos: cfg.CUPOS, reservas: reservas, bloqueos: bloqueos,
     festivos: festivos, fechasBloqueadas: listaTexto_(cfg.FECHAS_BLOQUEADAS), sesiones: leerSesiones_().filter(function (s) { return !programa || !s.programa || s.programa === programa; }),
   });
 }

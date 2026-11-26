@@ -98,7 +98,7 @@ function horariosDisponibles_(ahora, programa) {
   }
   return calcularHorarios_({
     ahora: ahora, offMin: off, horario: horarioSemanal_(cfg), duracionMin: cfg.DURACION, pasoMin: cfg.PASO,
-    anticipacionMin: cfg.ANTICIPACION * 60, dias: cfg.DIAS, cupos: cfg.CUPOS, reservas: reservas, bloqueos: bloqueos,
+    anticipacionMin: cfg.ANTICIPACION * 60, dias: cfg.DIAS, diasMin: Math.max(0, Math.floor(cfg.DIAS_MIN || 0)), cupos: cfg.CUPOS, reservas: reservas, bloqueos: bloqueos,
     festivos: festivos, fechasBloqueadas: listaTexto_(cfg.FECHAS_BLOQUEADAS), sesiones: leerSesiones_().filter(function (s) { return !programa || !s.programa || s.programa === programa; }),
   });
 }

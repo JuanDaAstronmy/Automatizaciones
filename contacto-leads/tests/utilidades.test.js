@@ -143,3 +143,18 @@ test('une nombre y apellido cuando vienen separados', () => {
   assert.equal(m.apellido, 1);
   assert.equal(m.telefono, 2);
 });
+
+test('días mínimos de anticipación: un jueves con 2 días solo deja agendar desde el sábado', () => {
+  const H = { 0: [], 1: [[540, 600]], 2: [[540, 600]], 3: [[540, 600]], 4: [[540, 600]], 5: [[540, 600]], 6: [[540, 600]] };
+  const dias = g.calcularHorarios_(base({ ahora: new Date('2026-11-26T08:00:00-05:00'), horario: H, anticipacionMin: 0, diasMin: 2, dias: 3 }));
+  assert.deepEqual(Array.from(dias, (d) => d.fecha), ['2026-11-28', '2026-11-30']);
+});
+
+test('sesiones con inscritos se marcan como recomendadas', () => {
+  const ms = (iso) => new Date(iso).getTime();
+  const ses = [{ dow: 3, inicioMin: 900, duracion: 60, anfitrion: 'Ana', cupos: 15 }, { dow: 3, inicioMin: 1080, duracion: 60, anfitrion: 'Leidy', cupos: 15 }];
+  const dias = g.calcularHorarios_(base({ sesiones: ses, anticipacionMin: 0, reservas: [{ inicio: ms('2026-11-25T15:00:00-05:00'), fin: ms('2026-11-25T16:00:00-05:00') }] }));
+  const mie = dias.find((d) => d.fecha === '2026-11-25');
+  assert.deepEqual(Array.from(mie.horarios, (h) => h.recomendado), [true, false]);
+  assert.equal(mie.recomendado, true);
+});

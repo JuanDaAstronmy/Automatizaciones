@@ -138,6 +138,7 @@ const DEF_CONFIG = [
   { k: 'PASO', tipo: 'num', def: 30, etiqueta: 'Cada cuántos minutos empieza un horario', ayuda: 'Ej.: 30 → 9:00, 9:30, 10:00…' },
   { k: 'CUPOS', tipo: 'num', def: 1, etiqueta: 'Reuniones a la misma hora', ayuda: 'Pon 2 si dos personas del equipo pueden entrevistar en paralelo.' },
   { k: 'ANTICIPACION', tipo: 'num', def: 3, etiqueta: 'Anticipación mínima para agendar (horas)', ayuda: 'Evita que alguien agende para dentro de 10 minutos.' },
+  { k: 'DIAS_MIN', tipo: 'num', def: 0, etiqueta: 'Días mínimos de anticipación', ayuda: '0 = desde hoy · 1 = desde mañana · 2 = desde pasado mañana (ej. un jueves solo se puede agendar del sábado en adelante).' },
   { k: 'DIAS', tipo: 'num', def: 10, etiqueta: 'Días hacia adelante que se muestran', ayuda: '' },
   { k: 'H1', tipo: 'horario', def: '09:00-12:00, 14:00-18:00', etiqueta: 'Horario lunes', ayuda: 'Formato 09:00-12:00, 14:00-18:00. Déjalo vacío si ese día no hay reuniones.' },
   { k: 'H2', tipo: 'horario', def: '09:00-12:00, 14:00-18:00', etiqueta: 'Horario martes', ayuda: '' },

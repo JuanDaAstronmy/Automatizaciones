@@ -251,7 +251,7 @@ function calcularHorarios_(p) {
   const bloqueos = p.bloqueos || [];
   const cupos = Math.max(1, p.cupos || 1);
   const dias = [];
-  for (let i = 0; i < p.dias; i++) {
+  for (let i = Math.max(0, p.diasMin || 0); i < (p.diasMin || 0) + p.dias; i++) {
     const t = new Date(Date.UTC(hoy.y, hoy.m - 1, hoy.d + i));
     const y = t.getUTCFullYear(), m = t.getUTCMonth() + 1, d = t.getUTCDate();
     const clave = claveFecha_(y, m, d);
@@ -265,7 +265,7 @@ function calcularHorarios_(p) {
       if (bloqueos.some(function (b) { return b.inicio < e && b.fin > s; })) return;
       const inscritos = reservas.filter(function (r) { return r.inicio === s; }).length;
       if (inscritos >= se.cupos) return;
-      horarios.push({ inicio: isoConOffset_(new Date(s), off), ms: s, etiqueta: formatearHora_(new Date(s), off), anfitrion: se.anfitrion, duracion: se.duracion, cuposLibres: se.cupos - inscritos });
+      horarios.push({ inicio: isoConOffset_(new Date(s), off), ms: s, etiqueta: formatearHora_(new Date(s), off), anfitrion: se.anfitrion, duracion: se.duracion, cuposLibres: se.cupos - inscritos, recomendado: inscritos > 0 });
     });
     (p.sesiones && p.sesiones.length ? [] : (p.horario[t.getUTCDay()] || [])).forEach(function (tramo) {
       const finTramo = fechaDesdeLocal_(y, m, d, tramo[1], off).getTime();
@@ -282,7 +282,8 @@ function calcularHorarios_(p) {
     if (!horarios.length) continue;
     horarios.sort(function (a, b) { return a.ms - b.ms; });
     const base = fechaDesdeLocal_(y, m, d, 12 * 60, off);
-    dias.push({ fecha: clave, etiqueta: formatearDiaCorto_(base, off), etiquetaLarga: formatearDia_(base, off), horarios: horarios });
+    dias.push({ fecha: clave, etiqueta: formatearDiaCorto_(base, off), etiquetaLarga: formatearDia_(base, off), horarios: horarios,
+      recomendado: horarios.some(function (h) { return h.recomendado; }) });
   }
   return dias;
 }
